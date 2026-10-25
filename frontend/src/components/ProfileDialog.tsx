@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
-import { X, LogOut, Loader2, Key, Cookie, FileText, Shield, CreditCard } from "lucide-react";
+import { X, LogOut, Loader2, Key, Cookie, FileText, Shield, ShieldCheck, CreditCard } from "lucide-react";
 import { useAuthStore } from "../stores/authStore";
 import { useCookieConsentStore } from "../stores/cookieConsentStore";
 import { api } from "../api/client";
@@ -26,7 +26,7 @@ export function ProfileDialog({ open, onClose, onOpenApiKeys, capabilities }: Pr
 }
 
 function ProfileDialogContent({ onClose, onOpenApiKeys, capabilities }: Omit<ProfileDialogProps, "open">) {
-  const { user, signOut, updateProfile, authEnabled } = useAuthStore();
+  const { user, signOut, updateProfile, authEnabled, authMode } = useAuthStore();
   const resetConsent = useCookieConsentStore((s) => s.resetConsent);
   const currentDisplayName = (user?.user_metadata?.display_name as string) ?? "";
   const [displayName, setDisplayName] = useState(currentDisplayName);
@@ -327,6 +327,16 @@ function ProfileDialogContent({ onClose, onOpenApiKeys, capabilities }: Omit<Pro
               <Key size={13} className="text-text-muted" />
               API Keys
             </button>
+            {authMode === "local" && (
+              <Link
+                to="/security"
+                onClick={onClose}
+                className="flex items-center gap-2 px-2 py-1.5 text-xs text-text hover:bg-surface-hover rounded w-full text-left"
+              >
+                <ShieldCheck size={13} className="text-text-muted" />
+                Manage logins
+              </Link>
+            )}
             <button
               onClick={() => {
                 onClose();
