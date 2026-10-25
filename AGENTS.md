@@ -238,3 +238,30 @@ env).
   the operator's passkey admin account was untouched throughout.
 - Backend suite 306 green (29 new TOTP tests); qrcode (pure-Python SVG) added
   as a runtime dep for QR rendering.
+
+## First-run setup wizard + Manage logins (2026-10-25, branch feat/first-run-setup de2ce0e + 26d97bc)
+
+Replaces the token-claim-then-passkey flow with a complete first-run wizard:
+**claim** (admin email + single-use OGI_SETUP_TOKEN — the anti-self-admin
+invariant) → **password + optional display name** → **optional TOTP** (QR +
+verify-one-code; ten hashed single-use recovery codes shown once) →
+**passkey, offered only when the system detects domain+SSL** (RPID env set +
+`isSecureContext`; silently absent over plain-HTTP LAN) → **finish** into the
+app. The wizard disappears once any local user exists.
+
+- **Manage logins** hub (SecurityPage, linked from the profile): change
+  password (requires current), enrol/unenrol TOTP (unenrol needs the
+  password), list/remove passkeys, regenerate recovery codes.
+- **No-stranding rule, enforced server-side (409)**: an account can never be
+  left with zero usable login methods — the last passkey of a no-password
+  account cannot be removed; passkey-less with password(+TOTP) is fine.
+  Passwords are set/change-only by design (no removal endpoint), so the guard
+  applies to passkey removal.
+- Tests: tests/test_setup_wizard.py (14 — wizard state machine, conditional
+  passkey offer, three stranding scenarios, change-password-requires-current);
+  backend suite 320 green; PasskeyAuthPage tests re-pin the new invariant
+  (claim chains into enrolment; passkey step gated on webauthn_available AND
+  isSecureContext).
+- Live state when merged: operator walked the wizard (passkey + password +
+  TOTP + recovery codes enrolled); the setup token was cleared from the live
+  env afterwards.
