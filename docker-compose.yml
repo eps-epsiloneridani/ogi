@@ -13,6 +13,7 @@ services:
     volumes:
       - ./backend:/app
       - ./plugins:/app/plugins
+      - ogi_media:/app/media
     environment:
       - OGI_DATABASE_URL=postgresql://postgres:postgres@db:5432/ogi
       - OGI_USE_SQLITE=false
@@ -46,6 +47,7 @@ services:
     volumes:
       - ./backend:/app
       - ./plugins:/app/plugins
+      - ogi_media:/app/media
     environment:
       - OGI_DATABASE_URL=postgresql://postgres:postgres@db:5432/ogi
       - OGI_USE_SQLITE=false
@@ -67,6 +69,7 @@ services:
     volumes:
       - ./backend:/app
       - ./plugins:/app/plugins
+      - ogi_media:/app/media
     environment:
       - OGI_DATABASE_URL=postgresql://postgres:postgres@db:5432/ogi
       - OGI_USE_SQLITE=false
@@ -124,3 +127,6 @@ services:
 
 volumes:
   pgdata:
+
+volumes:
+  ogi_media:
