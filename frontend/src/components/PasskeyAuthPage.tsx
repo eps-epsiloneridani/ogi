@@ -11,7 +11,7 @@ import { Seo } from "./Seo";
  * On a fresh install it also exposes the first-admin bootstrap (setup token).
  */
 export function PasskeyAuthPage() {
-  const { authStatus, bootstrap, signInWithPasskey, signInWithPassword } = useAuthStore();
+  const { authStatus, bootstrap, registerPasskey, signInWithPasskey, signInWithPassword } = useAuthStore();
   const navigate = useNavigate();
 
   const [busy, setBusy] = useState(false);
@@ -19,6 +19,7 @@ export function PasskeyAuthPage() {
 
   const [setupEmail, setSetupEmail] = useState("");
   const [setupToken, setSetupToken] = useState("");
+  const [enrolStage, setEnrolStage] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,19 +27,27 @@ export function PasskeyAuthPage() {
   const bootstrapRequired = authStatus?.bootstrapRequired ?? false;
   const passwordAuthEnabled = authStatus?.passwordAuthEnabled ?? false;
 
-  const run = async (fn: () => Promise<string | null>) => {
+  const run = async (fn: () => Promise<string | null>, onOk?: () => void) => {
     setBusy(true);
     setError(null);
     const err = await fn();
     setBusy(false);
     if (err) setError(err);
+    else if (onOk) onOk();
     else navigate("/projects");
   };
 
+  // First-run bootstrap claims the admin account; the WebAuthn ENROLMENT
+  // ceremony must chain immediately after it (same page, fresh user gesture for
+  // the create() call) — a bootstrapped admin without a passkey cannot sign in
+  // to anything. The backend already sets the session cookie on bootstrap, so
+  // register/begin accepts the call without an invite token.
   const handleBootstrap = (e: React.FormEvent) => {
     e.preventDefault();
-    run(() => bootstrap(setupEmail, setupToken));
+    run(() => bootstrap(setupEmail, setupToken), () => setEnrolStage(true));
   };
+
+  const handleEnrolPasskey = () => run(() => registerPasskey());
 
   const handlePasskey = () => run(signInWithPasskey);
 
@@ -55,7 +64,29 @@ export function PasskeyAuthPage() {
           <h1 className="text-lg font-semibold text-text mb-1">OpenGraph Intel</h1>
           <p className="text-xs text-text-muted mb-6">Sign in to continue</p>
 
-          {bootstrapRequired ? (
+          {enrolStage ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-text-muted">
+                Admin account claimed. Now register your passkey — this is how you sign
+                in from now on.
+              </p>
+              <button
+                onClick={handleEnrolPasskey}
+                disabled={busy}
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+              >
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Fingerprint size={14} />}
+                Register your passkey
+              </button>
+              <button
+                onClick={() => navigate("/projects")}
+                disabled={busy}
+                className="text-xs text-text-muted underline text-left"
+              >
+                Skip for now — you will not be able to sign in until a passkey is registered
+              </button>
+            </div>
+          ) : bootstrapRequired ? (
             <form onSubmit={handleBootstrap} className="flex flex-col gap-3">
               <p className="text-xs text-text-muted">
                 First-run setup: claim your admin account with the setup token the operator gave you.
