@@ -172,3 +172,42 @@ fork.
   file distinguishes file truth from masked-transcript truth.
 - **RQ workers log "warm shut down" and exit 0 when signalled** — not a bug.
 - Do not disturb other dockerHost residents (mosquitto :1883, Homebridge).
+
+## Local passkey auth (added 2026-10-25, commits e98a82c…b478bc8)
+
+OGI supports three backend auth modes by env, in priority order:
+`supabase` (OGI_SUPABASE_URL + ANON_KEY) → `local` (OGI_LOCAL_AUTH_ENABLED=true)
+→ `anonymous` (fresh installs/dev). **Local mode is the deployed mode here.**
+
+- **Passkey login is the primary path** (WebAuthn, RP ID = osi.61cygni.co.uk,
+  discoverable credentials, UserVerification preferred). Sessions are
+  stateless HMAC tokens (OGI_SESSION_SECRET) delivered as HttpOnly cookie
+  `ogi_session` and accepted equally as `Authorization: Bearer`.
+- **Accounts are invite-only after first run**: the FIRST user claims an admin
+  email with the single-use OGI_SETUP_TOKEN (bootstrap rejected once any local
+  user exists — this is what prevents self-admin via OGI_ADMIN_EMAILS). The
+  setup token was consumed 2026-10-25 and REMOVED from the live env; the
+  session secret's copy lives in `pass ogi/ogi-session-secret`, not in files.
+- Every subsequent account = admin-minted one-time invite link
+  (UI: /invites; API: /api/v1/auth/invites) → invitee registers a passkey to
+  activate. No email delivery needed.
+- Admin gating: require_admin_user checks the email against OGI_ADMIN_EMAILS
+  in BOTH supabase and local modes.
+- Enrolment MUST chain after account creation — the bootstrap page shows a
+  dedicated "Register your passkey" step (PasskeyAuthPage), driven by an
+  explicit button (fresh user gesture keeps credentials.create() reliable).
+  A regression test pins this: a successful bootstrap must NOT enter the app
+  before the ceremony (PasskeyAuthPage.test.tsx).
+- WebAuthn config: OGI_WEBAUTHN_RPID + OGI_PUBLIC_ORIGIN (+ optional
+  OGI_EXTRA_ALLOWED_ORIGINS). Passkeys need a secure context: the TLS edge
+  (this hostname) or localhost. The transports payload arrives as plain JSON
+  strings from @simplewebauthn (and may arrive as enums elsewhere) —
+  `_transports_from_attestation()` accepts both; do not "simplify" it back to
+  a `.value` call.
+- Tests: backend tests/test_local_auth.py (~25 tests); backend suite 277
+  green. Frontend: tsc clean; vitest green except 13 pre-existing
+  graphStore.test.ts jsdom failures (reproduce on the pre-change tree).
+- Password fallback: argon2, OFF by default (OGI_PASSWORD_AUTH_ENABLED) —
+  enable explicitly if wanted.
+- Stated assumptions: SameSite=Lax + origin checks (no per-request CSRF
+  token) acceptable single-tenant; challenge table rows TTL 5 min.
