@@ -11,6 +11,7 @@ import ogi.models.project  # noqa: F401
 import ogi.models.entity  # noqa: F401
 import ogi.models.edge  # noqa: F401
 import ogi.models.auth  # noqa: F401
+import ogi.models.local_auth  # noqa: F401
 import ogi.models.transform  # noqa: F401
 import ogi.models.api_key  # noqa: F401
 import ogi.models.plugin  # noqa: F401

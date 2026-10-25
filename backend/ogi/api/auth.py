@@ -57,11 +57,33 @@ async def get_current_user(
     request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> UserProfile:
-    """FastAPI dependency: extract and intensely verify the authenticated user.
+    """FastAPI dependency: extract and verify the authenticated user.
 
-    If Supabase credentials are not configured (local dev mode), returns a fixed anonymous profile.
+    Dispatches on ``settings.auth_mode``:
+
+    * ``supabase`` — requires a valid Supabase ``Authorization: Bearer`` JWT.
+    * ``local``    — requires a valid local session (HttpOnly cookie or Bearer).
+    * ``anonymous``— returns the fixed anonymous profile (local dev / fresh install).
     """
-    if not settings.supabase_url or not settings.supabase_anon_key:
+    mode = settings.auth_mode
+
+    if mode == "local":
+        from ogi.auth_tokens import SESSION_COOKIE_NAME, verify_session_token
+
+        token = request.cookies.get(SESSION_COOKIE_NAME)
+        if not token:
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header.removeprefix("Bearer ").strip()
+        user_id = verify_session_token(token) if token else None
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        profile = await session.get(UserProfile, user_id)
+        if not profile:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        return _detach_profile(profile)
+
+    if mode != "supabase":
         return _ANON_USER
 
     auth_header = request.headers.get("Authorization", "")
@@ -130,9 +152,12 @@ async def require_admin_user(
 ) -> UserProfile:
     """Restrict endpoints to configured admin users.
 
-    In local/no-auth mode, admin checks are bypassed to keep developer UX intact.
+    In anonymous mode, admin checks are bypassed to keep developer UX intact.
+    In supabase and local modes, the user's email must be in ``OGI_ADMIN_EMAILS``
+    (the local mode reads the same env list; the authenticated user's email is
+    checked against it).
     """
-    if not settings.supabase_url or not settings.supabase_anon_key:
+    if settings.auth_mode == "anonymous":
         return current_user
 
     if current_user.email.lower() not in settings.get_admin_emails():

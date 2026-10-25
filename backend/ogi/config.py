@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = os.environ.get("OGI_SUPABASE_SERVICE_ROLE_KEY", "")
     supabase_jwt_secret: str = os.environ.get("OGI_SUPABASE_JWT_SECRET", "")
 
+    # Local (passkey-first) auth. Active only when Supabase is NOT configured.
+    # Passkeys (WebAuthn) require a secure context: run behind the TLS edge
+    # (https origin) or on http://localhost. RPID and expected origins are
+    # operator-configurable below.
+    local_auth_enabled: bool = False
+    webauthn_rpid: str = ""  # e.g. "osi.61cygni.co.uk"
+    public_origin: str = ""  # comma-separated expected origins, e.g. "https://osi.61cygni.co.uk"
+    extra_allowed_origins: str = ""  # optional extra origins (LAN http://host:9901, etc.)
+    setup_token: str = ""  # one-time operator-minted token for first-admin bootstrap
+    password_auth_enabled: bool = False  # optional argon2 password fallback (default OFF)
+    session_secret: str = ""  # HMAC key for local session tokens; REQUIRED for durable sessions
+    session_ttl_seconds: int = 60 * 60 * 24 * 7  # 7 days
+    invite_ttl_seconds: int = 60 * 60 * 24 * 7  # 7 days
+
     # Direct PostgreSQL (asyncpg)
     database_url: str = os.environ.get("OGI_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ogi")
 
@@ -156,6 +170,40 @@ class Settings(BaseSettings):
             for email in self.admin_emails.split(",")
             if email.strip()
         ]
+
+    @property
+    def auth_mode(self) -> str:
+        """'supabase' when Supabase is configured, else 'local' when local auth
+        is enabled, else 'anonymous'."""
+        if self.supabase_url and self.supabase_anon_key:
+            return "supabase"
+        if self.local_auth_enabled:
+            return "local"
+        return "anonymous"
+
+    @property
+    def local_auth_active(self) -> bool:
+        return self.auth_mode == "local"
+
+    def get_expected_origins(self) -> list[str]:
+        """All WebAuthn-acceptable origins: public origin(s) plus extra LAN origins."""
+        origins: list[str] = []
+        for raw in (self.public_origin, self.extra_allowed_origins):
+            for part in raw.split(","):
+                origin = part.strip().rstrip("/")
+                if origin:
+                    origins.append(origin)
+        return list(dict.fromkeys(origins))
+
+    @property
+    def session_secure(self) -> bool:
+        """Whether the session cookie should carry the Secure flag. True when the
+        primary public origin is https (i.e. served behind the TLS edge)."""
+        first = (self.public_origin.split(",")[0] if self.public_origin else "").strip()
+        return first.startswith("https://")
+
+    def is_admin_email(self, email: str) -> bool:
+        return (email or "").strip().lower() in self.get_admin_emails()
 
     @property
     def normalized_telemetry_level(self) -> str:
