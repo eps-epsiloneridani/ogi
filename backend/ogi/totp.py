@@ -95,7 +95,8 @@ def verify_totp(secret_b32: str, code: str, at: int | None = None, window: int =
     counter = int(now // STEP_SECONDS)
     secret_bytes = base32_decode(secret_b32)
     for offset in range(-window, window + 1):
-        if hotp(secret_bytes, counter + offset, DIGITS) == int(candidate):
+        computed = f"{hotp(secret_bytes, counter + offset, DIGITS):0{DIGITS}d}"
+        if hmac.compare_digest(computed, candidate):
             return True
     return False
 
