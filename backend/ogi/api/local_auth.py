@@ -233,6 +233,17 @@ async def bootstrap(
     return {"user": _profile_dict(profile), "token": token}
 
 
+def _transports_from_attestation(attestation: dict[str, Any]) -> list[str]:
+    """Accept transports as plain strings (from @simplewebauthn JSON) or as
+    py_webauthn enums with a .value — both occurred in the field; a 500 on the
+    happy path in the first-run ceremony is not an acceptable failure mode."""
+    data = attestation or {}
+    return [
+        t if isinstance(t, str) else getattr(t, "value", str(t))
+        for t in (data.get("response", {}).get("transports") or [])
+    ]
+
+
 # --------------------------------------------------------------------------- #
 # passkey registration
 # --------------------------------------------------------------------------- #
@@ -336,9 +347,7 @@ async def webauthn_register_complete(
         user_id=user_id,
         public_key=bytes_to_base64url(verified.credential_public_key),
         sign_count=verified.sign_count,
-        transports=json.dumps(
-            [t.value for t in (attestation.get("response", {}).get("transports") or [])]
-        ),
+        transports=json.dumps(_transports_from_attestation(attestation)),
         aaguid=str(verified.aaguid),
     )
     session.add(credential)

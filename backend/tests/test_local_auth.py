@@ -22,6 +22,7 @@ os.environ.setdefault("OGI_TELEMETRY_ENABLED", "false")
 from ogi.main import app  # noqa: E402
 from ogi.config import settings  # noqa: E402
 from ogi.auth_tokens import issue_session_token, verify_session_token  # noqa: E402
+from ogi.api.local_auth import _transports_from_attestation  # noqa: E402
 
 
 @pytest.fixture
@@ -256,3 +257,31 @@ async def test_webauthn_complete_rejects_bad_challenge(client: AsyncClient):
 async def test_register_begin_requires_auth_or_invite(client: AsyncClient):
     r = await client.post("/api/v1/auth/webauthn/register/begin", json={})
     assert r.status_code == 401
+
+
+# --------------------------------------------------------------------------- #
+# transports tolerance: JSON strings from @simplewebauthn OR py_webauthn enums
+# --------------------------------------------------------------------------- #
+
+def test_transports_from_attestation_accepts_string_items():
+    # Regression: the first-run ceremony 500'd on
+    # AttributeError: 'str' object has no attribute 'value' —
+    # browser JSON already carries plain strings.
+    assert _transports_from_attestation({"response": {"transports": ["internal"]}}) == ["internal"]
+    assert _transports_from_attestation({"response": {"transports": ["internal", "hybrid"]}}) == [
+        "internal", "hybrid"]
+
+
+def test_transports_from_attestation_accepts_enum_like_items():
+    class _T:
+        def __init__(self, v): self._v = v
+        @property
+        def value(self): return self._v
+
+    assert _transports_from_attestation({"response": {"transports": [_T("usb")]}}) == ["usb"]
+    assert _transports_from_attestation({"response": {"transports": [_T("hybrid"), "internal"]}}) == ["hybrid", "internal"]
+
+
+def test_transports_from_attestation_missing_or_none():
+    assert _transports_from_attestation({}) == []
+    assert _transports_from_attestation(None) == []
