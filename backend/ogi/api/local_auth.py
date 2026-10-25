@@ -158,6 +158,27 @@ async def _has_any_local_user(session: AsyncSession) -> bool:
     return result.scalar_one_or_none() is not None
 
 
+async def _count_passkeys(session: AsyncSession, user_id: UUID) -> int:
+    stmt = select(WebAuthnCredential).where(WebAuthnCredential.user_id == user_id)
+    result = await session.execute(stmt)
+    return len(result.scalars().all())
+
+
+async def _would_strand_on_passkey_removal(session: AsyncSession, user_id: UUID) -> bool:
+    """True if removing one more passkey would leave the account with no login
+    method at all.
+
+    A login method is a passkey OR a set password. TOTP is a second factor, not
+    a method on its own, so a passkey-less account with password(+TOTP) is fine
+    and never strands on passkey removal; a single-passkey account with no
+    password removing its last passkey is NOT.
+    """
+    local_user = await session.get(LocalAuthUser, user_id)
+    if local_user is not None and local_user.password_hash:
+        return False  # password remains → still a usable method
+    return await _count_passkeys(session, user_id) <= 1
+
+
 async def _store_challenge(
     session: AsyncSession, challenge: bytes, kind: str, user_id: UUID | None
 ) -> str:
@@ -322,6 +343,7 @@ async def auth_status(session: AsyncSession = Depends(get_session)) -> dict[str,
         "totpRequired": bool(settings.totp_required),
         "rpid": rpid,
         "origins": origins,
+        "webauthnAvailable": settings.webauthn_available,
         "bootstrapRequired": not await _has_any_local_user(session),
         "setupTokenConfigured": bool(settings.setup_token),
     }
@@ -490,8 +512,66 @@ async def webauthn_register_complete(
 
 
 # --------------------------------------------------------------------------- #
-# passkey login
+# passkey management (list / remove — the manage-logins hub)
 # --------------------------------------------------------------------------- #
+
+def _credential_dict(cred: WebAuthnCredential) -> dict[str, Any]:
+    transports: list[str] = []
+    try:
+        raw = json.loads(cred.transports or "[]")
+        if isinstance(raw, list):
+            transports = [t if isinstance(t, str) else str(t) for t in raw]
+    except (ValueError, TypeError):
+        transports = []
+    return {
+        "credentialId": cred.credential_id,
+        "transports": transports,
+        "aaguid": cred.aaguid,
+        "createdAt": cred.created_at.isoformat() if cred.created_at else None,
+        "lastUsedAt": cred.last_used_at.isoformat() if cred.last_used_at else None,
+    }
+
+
+@router.get("/webauthn/credentials")
+async def webauthn_credentials_list(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> list[dict[str, Any]]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    stmt = select(WebAuthnCredential).where(WebAuthnCredential.user_id == profile.id).order_by(
+        WebAuthnCredential.created_at.desc()
+    )
+    result = await session.execute(stmt)
+    return [_credential_dict(c) for c in result.scalars().all()]
+
+
+@router.delete("/webauthn/credentials/{credential_id}", status_code=200)
+async def webauthn_credential_remove(
+    request: Request,
+    credential_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, bool]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    cred = await session.get(WebAuthnCredential, credential_id)
+    if cred is None or cred.user_id != profile.id:
+        raise HTTPException(status_code=404, detail="Credential not found")
+
+    if await _would_strand_on_passkey_removal(session, profile.id):
+        raise HTTPException(
+            status_code=409,
+            detail="Removing this passkey would leave the account with no way to sign in",
+        )
+
+    await session.delete(cred)
+    await session.commit()
+    return {"ok": True}
 
 @router.post("/webauthn/login/begin")
 async def webauthn_login_begin(
@@ -642,6 +722,16 @@ async def password_set(
         raise HTTPException(status_code=400, detail="Password too short")
 
     local_user = await session.get(LocalAuthUser, profile.id)
+    # Change-password (once a password exists) requires the current password, so
+    # a stolen session alone cannot silently rotate the credential.
+    if local_user is not None and local_user.password_hash:
+        current = payload.get("currentPassword") or ""
+        try:
+            _ph.verify(local_user.password_hash, current)
+        except (VerifyMismatchError, InvalidHashError):
+            raise HTTPException(
+                status_code=401, detail="Current password is required to change the password"
+            )
     if local_user is None:
         local_user = LocalAuthUser(user_id=profile.id)
         session.add(local_user)
@@ -796,6 +886,26 @@ async def auth_me(
             raise HTTPException(status_code=401, detail="Not authenticated")
         return _profile_dict(profile)
     return _profile_dict(None)
+
+
+@router.post("/profile")
+async def profile_update(
+    request: Request,
+    payload: dict[str, str],
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Set the optional display name for the local-auth user (session-authenticated)."""
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    display_name = (payload.get("displayName") or "").strip()
+    profile.display_name = display_name[:200]  # defensive length cap
+    session.add(profile)
+    await session.commit()
+    await session.refresh(profile)
+    return _profile_dict(profile)
 
 
 @router.post("/logout", status_code=200)
