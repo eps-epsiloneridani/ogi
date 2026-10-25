@@ -4,6 +4,7 @@ import { Loader2, Plus, Trash2, Lock, Unlock, User, FolderOpen, LogOut } from "l
 import { api } from "../api/client";
 import type { CapabilitiesResponse, MyProjectItem } from "../api/client";
 import { useAuthStore } from "../stores/authStore";
+import { authMode } from "../stores/authStore";
 import { useProjectStore } from "../stores/projectStore";
 import { ProfileDialog } from "./ProfileDialog";
 import { ApiKeySettings } from "./ApiKeySettings";
@@ -159,6 +160,14 @@ export function MyProjectsPage() {
                 className="px-3 py-1.5 text-sm rounded border border-border text-text-muted hover:text-text hover:border-accent/40"
               >
                 Telemetry Admin
+              </Link>
+            )}
+            {authMode === "local" && (
+              <Link
+                to="/admin/invites"
+                className="px-3 py-1.5 text-sm rounded border border-border text-text-muted hover:text-text hover:border-accent/40"
+              >
+                Invites
               </Link>
             )}
             <button

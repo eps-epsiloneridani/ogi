@@ -4,6 +4,9 @@ import { Loader2 } from "lucide-react";
 import { Toaster } from "sonner";
 import { Layout } from "./components/Layout";
 import { AuthPage } from "./components/AuthPage";
+import { PasskeyAuthPage } from "./components/PasskeyAuthPage";
+import { InviteAcceptPage } from "./components/InviteAcceptPage";
+import { AdminInvitesPage } from "./components/AdminInvitesPage";
 import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LandingPage } from "./components/LandingPage";
@@ -19,6 +22,7 @@ import { BillingCooldownDialog } from "./components/BillingCooldownDialog";
 import { useProjectStore } from "./stores/projectStore";
 import { useGraphStore } from "./stores/graphStore";
 import { useAuthStore } from "./stores/authStore";
+import { authMode } from "./stores/authStore";
 import { useRealtimeSync } from "./hooks/useRealtimeSync";
 import { useAnalytics } from "./hooks/useAnalytics";
 
@@ -115,10 +119,11 @@ function App() {
       <HashScrollHandler />
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<AuthPage mode="signin" />} />
-        <Route path="/signup" element={<AuthPage mode="signup" />} />
-        <Route path="/forgot-password" element={<AuthPage mode="forgot" />} />
+        <Route path="/login" element={authMode === "local" ? <PasskeyAuthPage /> : <AuthPage mode="signin" />} />
+        <Route path="/signup" element={authMode === "local" ? <PasskeyAuthPage /> : <AuthPage mode="signup" />} />
+        <Route path="/forgot-password" element={authMode === "local" ? <PasskeyAuthPage /> : <AuthPage mode="forgot" />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/discover" element={<DiscoverPage />} />
         <Route path="/transforms" element={<TransformsCatalogPage />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -127,6 +132,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/projects" element={<MyProjectsPage />} />
           <Route path="/admin/telemetry" element={<TelemetryAdminPage />} />
+          <Route path="/admin/invites" element={<AdminInvitesPage />} />
           <Route path="/projects/:projectId" element={<WorkspaceView />} />
         </Route>
       </Routes>
