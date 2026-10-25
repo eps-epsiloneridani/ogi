@@ -211,3 +211,30 @@ OGI supports three backend auth modes by env, in priority order:
   enable explicitly if wanted.
 - Stated assumptions: SameSite=Lax + origin checks (no per-request CSRF
   token) acceptable single-tenant; challenge table rows TTL 5 min.
+
+## Email + password + TOTP fallback (added 2026-10-25, commits 61412f0 + e762c8d)
+
+The LAN-friendly sibling of passkey login: usable over plain HTTP where
+WebAuthn cannot run. Shipped ENABLED on this deployment:
+`OGI_PASSWORD_AUTH_ENABLED=true`, `OGI_TOTP_REQUIRED=true` (a password login
+is blocked until the account enrolls TOTP; disable per-account policy via
+env).
+
+- **Login** = /api/v1/auth/password/login with email + password + either a
+  6-digit TOTP code or a valid unused **recovery code**. Codes verified
+  constant-time (compare_digest) with ±1 window (90 s clock-drift tolerance);
+  TOTP math = stdlib hmac RFC 6238, secrets 160-bit base32, RFC test vectors
+  in the suite.
+- **Enrolment** = /security (SecurityPage): set/replace password (argon2),
+  enroll TOTP (QR + otpauth URI + verify-one-code), regenerate the 10 hashed
+  one-time recovery codes, add another passkey (ceremony reuses the session).
+  Remove-TOTP requires confirmation; /totp/status exposes enrollment state.
+- **Abuse control**: DB-backed per-email progressive backoff — after
+  login_max_attempts failures the next attempt gets 429 + Retry-After,
+  exponential (base × 2^n) capped at login_backoff_cap_seconds. Verified on
+  the live stack (5 cumulative failures → 429).
+- A full e2e was run with a throwaway account (set → enroll → login 200 →
+  recovery login 200 → code reuse 401 → lockout 429) and every trace deleted;
+  the operator's passkey admin account was untouched throughout.
+- Backend suite 306 green (29 new TOTP tests); qrcode (pure-Python SVG) added
+  as a runtime dep for QR rendering.
