@@ -15,10 +15,27 @@ export interface AuthStatus {
   authMode: "supabase" | "local" | "anonymous";
   localAuthEnabled: boolean;
   passwordAuthEnabled: boolean;
+  totpRequired: boolean;
   rpid: string;
   origins: string[];
   bootstrapRequired: boolean;
   setupTokenConfigured: boolean;
+}
+
+export interface TotpStatus {
+  totpEnrolled: boolean;
+  hasPassword: boolean;
+  recoveryCodesRemaining: number;
+}
+
+export interface TotpEnrollBegin {
+  secret: string;
+  otpauthUri: string;
+  qrDataUri: string;
+}
+
+export interface TotpEnrollComplete {
+  recoveryCodes: string[];
 }
 
 export interface Invite {
@@ -94,10 +111,27 @@ export const localAuthApi = {
       inviteToken,
     }),
 
-  passwordLogin: (email: string, password: string) =>
-    post<{ user: LocalUser; token: string }>("/api/v1/auth/password/login", { email, password }),
+  passwordLogin: (email: string, password: string, totpCode?: string, recoveryCode?: string) =>
+    post<{ user: LocalUser; token: string }>("/api/v1/auth/password/login", {
+      email,
+      password,
+      totpCode,
+      recoveryCode,
+    }),
   passwordSet: (password: string) =>
     post<{ ok: boolean }>("/api/v1/auth/password/set", { password }),
+
+  totpStatus: () => get<TotpStatus>("/api/v1/auth/totp/status"),
+  totpEnrollBegin: () => post<TotpEnrollBegin>("/api/v1/auth/totp/enroll/begin"),
+  totpEnrollComplete: (code: string) =>
+    post<TotpEnrollComplete>("/api/v1/auth/totp/enroll/complete", { code }),
+  totpRemove: (password?: string) =>
+    post<{ ok: boolean }>("/api/v1/auth/totp/remove", password ? { password } : {}),
+  recoveryRegenerate: (password?: string) =>
+    post<{ recoveryCodes: string[] }>(
+      "/api/v1/auth/recovery-codes/regenerate",
+      password ? { password } : {},
+    ),
 
   createInvite: (email: string) => post<Invite>("/api/v1/auth/invites", { email }),
   listInvites: () => get<Invite[]>("/api/v1/auth/invites"),

@@ -39,6 +39,7 @@ dependencies = [
     "redis>=7.3.0",
     "timezonefinder>=8.2.1",
     "astral>=3.2",
+    "qrcode>=7.4",
 ]
 
 [project.scripts]

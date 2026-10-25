@@ -37,11 +37,14 @@ from ogi.config import settings
 from ogi.db.database import get_session
 from ogi.models import (
     AuthInvite,
+    AuthRateLimit,
     LocalAuthUser,
+    TotpRecoveryCode,
     UserProfile,
     WebAuthnChallenge,
     WebAuthnCredential,
 )
+from ogi import totp as totp_util
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +145,14 @@ async def _get_or_create_profile(email: str, session: AsyncSession) -> UserProfi
     return profile
 
 
+async def _find_profile_by_email(email: str, session: AsyncSession) -> UserProfile | None:
+    """Look up a profile by email WITHOUT creating it (login must never mint a
+    profile for an unknown address — that would be user enumeration plus junk)."""
+    stmt = select(UserProfile).where(UserProfile.email == email.lower().strip())
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def _has_any_local_user(session: AsyncSession) -> bool:
     result = await session.execute(select(LocalAuthUser.user_id).limit(1))
     return result.scalar_one_or_none() is not None
@@ -179,6 +190,121 @@ async def _consume_challenge(
 
 
 # --------------------------------------------------------------------------- #
+# TOTP / rate-limit / recovery-code helpers
+# --------------------------------------------------------------------------- #
+
+def _backoff_seconds(failed_count: int) -> int | None:
+    """Progressive lockout duration for a given failure count.
+
+    The first ``login_max_attempts - 1`` failures carry no lockout (each returns
+    a plain 401). Reaching the threshold (the 5th failure by default) engages a
+    lock of ``base * 2**(n - max)`` seconds, capped at ``login_backoff_cap_seconds``
+    — so "lockout after N bad attempts" means attempt N+1 is rejected.
+    """
+    if failed_count < settings.login_max_attempts:
+        return None
+    exp = failed_count - settings.login_max_attempts
+    return min(settings.login_backoff_base_seconds * (2 ** exp), settings.login_backoff_cap_seconds)
+
+
+async def _check_login_rate_limit(session: AsyncSession, email: str) -> None:
+    row = await session.get(AuthRateLimit, email.lower().strip())
+    if row is not None and row.locked_until is not None:
+        locked = _as_utc_naive(row.locked_until)
+        if locked > _now_naive():
+            retry_after = max(1, int((locked - _now_naive()).total_seconds()))
+            raise HTTPException(
+                status_code=429,
+                detail="Too many failed attempts. Try again later.",
+                headers={"Retry-After": str(retry_after)},
+            )
+
+
+async def _record_login_failure(session: AsyncSession, email: str) -> None:
+    key = email.lower().strip()
+    row = await session.get(AuthRateLimit, key)
+    if row is None:
+        row = AuthRateLimit(key=key, failed_count=0)
+        session.add(row)
+    row.failed_count += 1
+    row.updated_at = _now_naive()
+    backoff = _backoff_seconds(row.failed_count)
+    if backoff is not None:
+        row.locked_until = _now_naive() + timedelta(seconds=backoff)
+    await session.commit()
+
+
+async def _clear_login_failures(session: AsyncSession, email: str) -> None:
+    row = await session.get(AuthRateLimit, email.lower().strip())
+    if row is not None:
+        await session.delete(row)
+        await session.commit()
+
+
+async def _consume_recovery_code(
+    session: AsyncSession, user_id: UUID, code: str
+) -> bool:
+    """Redeem a one-time recovery code; returns False if unknown/used/wrong user."""
+    if not code:
+        return False
+    row = await session.get(TotpRecoveryCode, totp_util.hash_recovery_code(code))
+    if row is None or row.user_id != user_id or row.used_at is not None:
+        return False
+    row.used_at = _now_naive()
+    session.add(row)
+    await session.commit()
+    return True
+
+
+async def _unused_recovery_code_count(session: AsyncSession, user_id: UUID) -> int:
+    stmt = select(TotpRecoveryCode).where(
+        TotpRecoveryCode.user_id == user_id, TotpRecoveryCode.used_at.is_(None)
+    )
+    result = await session.execute(stmt)
+    return len(result.scalars().all())
+
+
+async def _delete_recovery_codes(session: AsyncSession, user_id: UUID) -> None:
+    stmt = select(TotpRecoveryCode).where(TotpRecoveryCode.user_id == user_id)
+    result = await session.execute(stmt)
+    for row in result.scalars().all():
+        await session.delete(row)
+
+
+def _issue_recovery_codes(session: AsyncSession, user_id: UUID) -> list[str]:
+    """Generate fresh recovery codes, store their hashes, return the plaintext."""
+    codes = totp_util.generate_recovery_codes(settings.totp_recovery_code_count)
+    for code in codes:
+        session.add(TotpRecoveryCode(code_hash=totp_util.hash_recovery_code(code), user_id=user_id))
+    return codes
+
+
+def _make_qr_svg_data_uri(text: str) -> str:
+    """Render ``text`` as an SVG QR code and return it as a ``data:`` URI.
+
+    Uses the pure-Python ``qrcode`` library (SVG output, no Pillow) so the
+    frontend can display the provisioning URI with a plain ``<img>`` and no
+    QR logic of its own.
+    """
+    import base64
+    import io
+
+    import qrcode
+    from qrcode.image.svg import SvgPathImage
+
+    img = qrcode.make(text, image_factory=SvgPathImage, box_size=10, border=2)
+    if hasattr(img, "to_string"):
+        raw = img.to_string()
+    else:  # pragma: no cover - defensive fallback across qrcode versions
+        buf = io.BytesIO()
+        img.save(buf)
+        raw = buf.getvalue()
+    if not isinstance(raw, bytes):
+        raw = raw.encode("utf-8")
+    return "data:image/svg+xml;base64," + base64.b64encode(raw).decode("ascii")
+
+
+# --------------------------------------------------------------------------- #
 # public config / bootstrap / status
 # --------------------------------------------------------------------------- #
 
@@ -193,6 +319,7 @@ async def auth_status(session: AsyncSession = Depends(get_session)) -> dict[str,
         "authMode": "local",
         "localAuthEnabled": True,
         "passwordAuthEnabled": bool(settings.password_auth_enabled and _ARGON2_AVAILABLE),
+        "totpRequired": bool(settings.totp_required),
         "rpid": rpid,
         "origins": origins,
         "bootstrapRequired": not await _has_any_local_user(session),
@@ -437,7 +564,7 @@ async def webauthn_login_complete(
 
 
 # --------------------------------------------------------------------------- #
-# password fallback (env-gated, OFF by default)
+# password fallback (env-gated) + TOTP second factor + recovery codes
 # --------------------------------------------------------------------------- #
 
 @router.post("/password/login")
@@ -453,15 +580,45 @@ async def password_login(
 
     email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
-    profile = await _get_or_create_profile(email, session)
+    totp_code = (payload.get("totpCode") or "").strip()
+    recovery_code = (payload.get("recoveryCode") or "").strip()
+
+    await _check_login_rate_limit(session, email)
+
+    profile = await _find_profile_by_email(email, session)
+    if profile is None:
+        await _record_login_failure(session, email)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
     local_user = await session.get(LocalAuthUser, profile.id)
     if local_user is None or not local_user.password_hash:
+        await _record_login_failure(session, email)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
     try:
         _ph.verify(local_user.password_hash, password)
     except (VerifyMismatchError, InvalidHashError):
+        await _record_login_failure(session, email)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # Password is correct. Enforce the second factor when enrolled (or required).
+    enrolled = bool(local_user.totp_secret and local_user.totp_enrolled_at)
+    if enrolled:
+        if recovery_code:
+            if not await _consume_recovery_code(session, profile.id, recovery_code):
+                await _record_login_failure(session, email)
+                raise HTTPException(status_code=401, detail="Invalid recovery code")
+        elif totp_code:
+            if not totp_util.verify_totp(local_user.totp_secret, totp_code):
+                await _record_login_failure(session, email)
+                raise HTTPException(status_code=401, detail="Invalid TOTP code")
+        else:
+            raise HTTPException(status_code=401, detail="TOTP code required")
+    elif settings.totp_required:
+        # Password-only login is disabled until the user enrolls TOTP.
+        raise HTTPException(status_code=403, detail="TOTP enrollment required before password login")
+
+    await _clear_login_failures(session, email)
     token = issue_session_token(profile.id)
     _set_session_cookie(response, token)
     return {"user": _profile_dict(profile), "token": token}
@@ -491,6 +648,135 @@ async def password_set(
     local_user.password_hash = _ph.hash(password)
     await session.commit()
     return {"ok": True}
+
+
+@router.get("/totp/status")
+async def totp_status(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    local_user = await session.get(LocalAuthUser, profile.id)
+    enrolled = bool(local_user is not None and local_user.totp_enrolled_at)
+    return {
+        "totpEnrolled": enrolled,
+        "hasPassword": bool(local_user is not None and local_user.password_hash),
+        "recoveryCodesRemaining": (
+            await _unused_recovery_code_count(session, profile.id) if enrolled else 0
+        ),
+    }
+
+
+@router.post("/totp/enroll/begin")
+async def totp_enroll_begin(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> dict[str, str]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    local_user = await session.get(LocalAuthUser, profile.id)
+    if local_user is None:
+        local_user = LocalAuthUser(user_id=profile.id)
+        session.add(local_user)
+    if local_user.totp_enrolled_at is not None:
+        raise HTTPException(status_code=409, detail="TOTP already enrolled")
+
+    secret = totp_util.generate_secret()
+    local_user.totp_secret = secret  # pending until a code is verified
+    await session.commit()
+
+    uri = totp_util.provisioning_uri(profile.email or "user", secret)
+    return {"secret": secret, "otpauthUri": uri, "qrDataUri": _make_qr_svg_data_uri(uri)}
+
+
+@router.post("/totp/enroll/complete")
+async def totp_enroll_complete(
+    request: Request,
+    payload: dict[str, str],
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    local_user = await session.get(LocalAuthUser, profile.id)
+    if local_user is None or not local_user.totp_secret:
+        raise HTTPException(status_code=400, detail="No pending enrollment")
+    if local_user.totp_enrolled_at is not None:
+        raise HTTPException(status_code=409, detail="TOTP already enrolled")
+
+    code = (payload.get("code") or "").strip()
+    if not totp_util.verify_totp(local_user.totp_secret, code):
+        raise HTTPException(status_code=400, detail="Invalid TOTP code")
+
+    local_user.totp_enrolled_at = _now_naive()
+    recovery_codes = _issue_recovery_codes(session, profile.id)
+    await session.commit()
+    return {"recoveryCodes": recovery_codes}
+
+
+@router.post("/totp/remove")
+async def totp_remove(
+    request: Request,
+    payload: dict[str, str],
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, bool]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    local_user = await session.get(LocalAuthUser, profile.id)
+    if local_user is None or not local_user.totp_enrolled_at:
+        raise HTTPException(status_code=400, detail="TOTP not enrolled")
+
+    # Fresh confirmation: require the account password when one is set; a
+    # passkey-only user (no password) confirms with their existing session.
+    if local_user.password_hash:
+        password = payload.get("password") or ""
+        try:
+            _ph.verify(local_user.password_hash, password)
+        except (VerifyMismatchError, InvalidHashError):
+            raise HTTPException(status_code=401, detail="Password required to remove TOTP")
+
+    local_user.totp_secret = None
+    local_user.totp_enrolled_at = None
+    await _delete_recovery_codes(session, profile.id)
+    await session.commit()
+    return {"ok": True}
+
+
+@router.post("/recovery-codes/regenerate")
+async def recovery_codes_regenerate(
+    request: Request,
+    payload: dict[str, str],
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    _require_local_auth()
+    profile = await _current_local_profile(request, session)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    local_user = await session.get(LocalAuthUser, profile.id)
+    if local_user is None or not local_user.totp_enrolled_at:
+        raise HTTPException(status_code=400, detail="TOTP not enrolled")
+
+    if local_user.password_hash:
+        password = payload.get("password") or ""
+        try:
+            _ph.verify(local_user.password_hash, password)
+        except (VerifyMismatchError, InvalidHashError):
+            raise HTTPException(status_code=401, detail="Password required")
+
+    await _delete_recovery_codes(session, profile.id)
+    recovery_codes = _issue_recovery_codes(session, profile.id)
+    await session.commit()
+    return {"recoveryCodes": recovery_codes}
 
 
 # --------------------------------------------------------------------------- #

@@ -20,7 +20,14 @@ from .transform import (
 )
 from .graph import Graph
 from .auth import UserProfile, ProjectMember, ProjectMemberCreate, ProjectMemberUpdate
-from .local_auth import LocalAuthUser, WebAuthnCredential, AuthInvite, WebAuthnChallenge
+from .local_auth import (
+    LocalAuthUser,
+    WebAuthnCredential,
+    AuthInvite,
+    WebAuthnChallenge,
+    TotpRecoveryCode,
+    AuthRateLimit,
+)
 from .plugin import PluginInfo
 from .api_key import ApiKey
 from .user_plugin_preference import UserPluginPreference
@@ -93,6 +100,7 @@ __all__ = [
     "Graph",
     "UserProfile", "ProjectMember", "ProjectMemberCreate", "ProjectMemberUpdate",
     "LocalAuthUser", "WebAuthnCredential", "AuthInvite", "WebAuthnChallenge",
+    "TotpRecoveryCode", "AuthRateLimit",
     "PluginInfo",
     "ApiKey",
     "UserPluginPreference",

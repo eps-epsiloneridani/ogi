@@ -7,6 +7,7 @@ import { AuthPage } from "./components/AuthPage";
 import { PasskeyAuthPage } from "./components/PasskeyAuthPage";
 import { InviteAcceptPage } from "./components/InviteAcceptPage";
 import { AdminInvitesPage } from "./components/AdminInvitesPage";
+import { SecurityPage } from "./components/SecurityPage";
 import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LandingPage } from "./components/LandingPage";
@@ -133,6 +134,7 @@ function App() {
           <Route path="/projects" element={<MyProjectsPage />} />
           <Route path="/admin/telemetry" element={<TelemetryAdminPage />} />
           <Route path="/admin/invites" element={<AdminInvitesPage />} />
+          <Route path="/security" element={<SecurityPage />} />
           <Route path="/projects/:projectId" element={<WorkspaceView />} />
         </Route>
       </Routes>

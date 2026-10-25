@@ -23,9 +23,11 @@ export function PasskeyAuthPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
 
   const bootstrapRequired = authStatus?.bootstrapRequired ?? false;
   const passwordAuthEnabled = authStatus?.passwordAuthEnabled ?? false;
+  const totpRequired = authStatus?.totpRequired ?? false;
 
   const run = async (fn: () => Promise<string | null>, onOk?: () => void) => {
     setBusy(true);
@@ -53,7 +55,13 @@ export function PasskeyAuthPage() {
 
   const handlePassword = (e: React.FormEvent) => {
     e.preventDefault();
-    run(() => signInWithPassword(email, password));
+    const code = totpCode.trim();
+    // A recovery code (XXXX-XXXX) and a 6-digit TOTP are both accepted in the
+    // same field; route to the right backend parameter.
+    const isRecovery = code.length > 6 || code.includes("-");
+    run(() =>
+      signInWithPassword(email, password, isRecovery ? undefined : code || undefined, isRecovery ? code : undefined),
+    );
   };
 
   return (
@@ -146,6 +154,15 @@ export function PasskeyAuthPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="px-3 py-2 text-sm bg-bg border border-border rounded text-text focus:outline-none focus:border-accent"
+                  />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder={totpRequired ? "Authenticator code" : "Authenticator / recovery code (if enrolled)"}
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
                     className="px-3 py-2 text-sm bg-bg border border-border rounded text-text focus:outline-none focus:border-accent"
                   />
                   <button

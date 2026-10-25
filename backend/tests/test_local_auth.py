@@ -35,6 +35,9 @@ def local_auth(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(settings, "admin_emails", "admin@example.com")
     monkeypatch.setattr(settings, "session_secret", "test-session-secret")
     monkeypatch.setattr(settings, "password_auth_enabled", False)
+    # TOTP is required by DEFAULT (config); the password-fallback tests below
+    # exercise the password-ONLY path, so opt out of the TOTP requirement here.
+    monkeypatch.setattr(settings, "totp_required", False)
     yield settings
 
 

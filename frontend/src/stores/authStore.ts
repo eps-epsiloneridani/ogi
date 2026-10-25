@@ -60,7 +60,12 @@ interface AuthState {
   bootstrap: (email: string, setupToken: string) => Promise<string | null>;
   signInWithPasskey: () => Promise<string | null>;
   registerPasskey: (inviteToken?: string) => Promise<string | null>;
-  signInWithPassword: (email: string, password: string) => Promise<string | null>;
+  signInWithPassword: (
+    email: string,
+    password: string,
+    totpCode?: string,
+    recoveryCode?: string,
+  ) => Promise<string | null>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -210,10 +215,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  signInWithPassword: async (email, password) => {
+  signInWithPassword: async (email, password, totpCode, recoveryCode) => {
     if (authMode !== "local") return "Local auth not configured";
     try {
-      const { user } = await localAuthApi.passwordLogin(email, password);
+      const { user } = await localAuthApi.passwordLogin(email, password, totpCode, recoveryCode);
       set({ user: toAuthUser(user as never), loading: false });
       return null;
     } catch (e) {

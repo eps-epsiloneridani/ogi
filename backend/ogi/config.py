@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     extra_allowed_origins: str = ""  # optional extra origins (LAN http://host:9901, etc.)
     setup_token: str = ""  # one-time operator-minted token for first-admin bootstrap
     password_auth_enabled: bool = False  # optional argon2 password fallback (default OFF)
+    # TOTP second factor for password login. Default TRUE: when password auth is
+    # enabled, a password-only login is blocked until the user has enrolled TOTP,
+    # so the LAN fallback is always password + a second factor (or a recovery
+    # code). Set false to allow password-only login for users who never enroll.
+    totp_required: bool = True
+    # Rate-limit knobs for password+OTP attempts (per email, progressive backoff).
+    login_max_attempts: int = 5
+    login_backoff_base_seconds: int = 30
+    login_backoff_cap_seconds: int = 900
+    totp_recovery_code_count: int = 10
     session_secret: str = ""  # HMAC key for local session tokens; REQUIRED for durable sessions
     session_ttl_seconds: int = 60 * 60 * 24 * 7  # 7 days
     invite_ttl_seconds: int = 60 * 60 * 24 * 7  # 7 days
