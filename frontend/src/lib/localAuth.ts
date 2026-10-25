@@ -18,6 +18,7 @@ export interface AuthStatus {
   totpRequired: boolean;
   rpid: string;
   origins: string[];
+  webauthnAvailable: boolean;
   bootstrapRequired: boolean;
   setupTokenConfigured: boolean;
 }
@@ -26,6 +27,14 @@ export interface TotpStatus {
   totpEnrolled: boolean;
   hasPassword: boolean;
   recoveryCodesRemaining: number;
+}
+
+export interface PasskeyCredential {
+  credentialId: string;
+  transports: string[];
+  aaguid: string;
+  createdAt: string | null;
+  lastUsedAt: string | null;
 }
 
 export interface TotpEnrollBegin {
@@ -118,8 +127,18 @@ export const localAuthApi = {
       totpCode,
       recoveryCode,
     }),
-  passwordSet: (password: string) =>
-    post<{ ok: boolean }>("/api/v1/auth/password/set", { password }),
+  passwordSet: (password: string, currentPassword?: string) =>
+    post<{ ok: boolean }>("/api/v1/auth/password/set", {
+      password,
+      currentPassword,
+    }),
+
+  profileUpdate: (displayName: string) =>
+    post<LocalUser>("/api/v1/auth/profile", { displayName }),
+
+  listPasskeys: () => get<PasskeyCredential[]>("/api/v1/auth/webauthn/credentials"),
+  removePasskey: (credentialId: string) =>
+    del<{ ok: boolean }>(`/api/v1/auth/webauthn/credentials/${credentialId}`),
 
   totpStatus: () => get<TotpStatus>("/api/v1/auth/totp/status"),
   totpEnrollBegin: () => post<TotpEnrollBegin>("/api/v1/auth/totp/enroll/begin"),

@@ -26,12 +26,19 @@ export const localAuthEnabled = isTruthy(getEnv("VITE_LOCAL_AUTH_ENABLED"));
 export const authMode: AuthMode =
   supabase !== null ? "supabase" : localAuthEnabled ? "local" : "anonymous";
 
-function toAuthUser(u: { id: string; email?: string | null; user_metadata?: unknown }): AuthUser {
+function toAuthUser(u: {
+  id: string;
+  email?: string | null;
+  user_metadata?: unknown;
+  displayName?: unknown;
+}): AuthUser {
   const meta = (u.user_metadata ?? {}) as { display_name?: unknown };
+  const metaName = typeof meta.display_name === "string" ? meta.display_name : "";
+  const localName = typeof u.displayName === "string" ? u.displayName : "";
   return {
     id: u.id,
     email: u.email ?? "",
-    user_metadata: { display_name: typeof meta.display_name === "string" ? meta.display_name : "" },
+    user_metadata: { display_name: metaName || localName },
   };
 }
 
@@ -170,6 +177,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   updateProfile: async (displayName) => {
+    if (authMode === "local") {
+      try {
+        const u = await localAuthApi.profileUpdate(displayName);
+        set({ user: toAuthUser(u as never) });
+        return null;
+      } catch (e) {
+        return e instanceof Error ? e.message : "Failed to update profile";
+      }
+    }
     if (!supabase) return "Auth not configured";
     const { data, error } = await supabase.auth.updateUser({
       data: { display_name: displayName },

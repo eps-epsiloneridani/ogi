@@ -212,6 +212,21 @@ class Settings(BaseSettings):
         first = (self.public_origin.split(",")[0] if self.public_origin else "").strip()
         return first.startswith("https://")
 
+    @property
+    def webauthn_available(self) -> bool:
+        """Whether a WebAuthn (passkey) ceremony can run in the browser.
+
+        Requires BOTH an RPID and an https public origin. Over plain-HTTP LAN the
+        passkey step must be silently absent — this is the config-side signal;
+        the SPA additionally checks ``window.isSecureContext`` before offering
+        the step (the two agree in practice, but the browser check is the
+        authoritative runtime guard).
+        """
+        if not self.webauthn_rpid.strip():
+            return False
+        first = (self.public_origin.split(",")[0] if self.public_origin else "").strip()
+        return first.startswith("https://")
+
     def is_admin_email(self, email: str) -> bool:
         return (email or "").strip().lower() in self.get_admin_emails()
 

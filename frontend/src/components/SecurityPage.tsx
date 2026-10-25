@@ -5,6 +5,7 @@ import {
   localAuthApi,
   performPasskeyRegistration,
   type TotpStatus,
+  type PasskeyCredential,
 } from "../lib/localAuth";
 import { Seo } from "./Seo";
 
@@ -24,7 +25,12 @@ export function SecurityPage() {
 
   // password
   const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
+
+  // passkeys
+  const [passkeys, setPasskeys] = useState<PasskeyCredential[]>([]);
+  const [passkeyMsg, setPasskeyMsg] = useState<string | null>(null);
 
   // TOTP enrollment
   const [enroll, setEnroll] = useState<{ secret: string; otpauthUri: string; qrDataUri: string } | null>(null);
@@ -40,6 +46,7 @@ export function SecurityPage() {
   const load = async () => {
     try {
       setStatus(await localAuthApi.totpStatus());
+      setPasskeys(await localAuthApi.listPasskeys());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load security status");
     } finally {
@@ -57,12 +64,28 @@ export function SecurityPage() {
     setPasswordMsg(null);
     setError(null);
     try {
-      await localAuthApi.passwordSet(password);
+      await localAuthApi.passwordSet(password, status?.hasPassword ? currentPassword : undefined);
       setPassword("");
+      setCurrentPassword("");
       setPasswordMsg("Password updated.");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set password");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removePasskey = async (credentialId: string) => {
+    setBusy(true);
+    setError(null);
+    setPasskeyMsg(null);
+    try {
+      await localAuthApi.removePasskey(credentialId);
+      setPasskeyMsg("Passkey removed.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove passkey");
     } finally {
       setBusy(false);
     }
@@ -176,23 +199,35 @@ export function SecurityPage() {
                   ? "A password is set. Change it below."
                   : "No password set. Add one to enable email + password login."}
               </p>
-              <form onSubmit={handleSetPassword} className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="New password (min 8 chars)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={8}
-                  required
-                  className={`${inputCls} flex-1`}
-                />
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
-                >
-                  {status?.hasPassword ? "Update" : "Set"}
-                </button>
+              <form onSubmit={handleSetPassword} className="flex flex-col gap-2">
+                {status?.hasPassword && (
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                    className={inputCls}
+                  />
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    placeholder="New password (min 8 chars)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={8}
+                    required
+                    className={`${inputCls} flex-1`}
+                  />
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                  >
+                    {status?.hasPassword ? "Update" : "Set"}
+                  </button>
+                </div>
               </form>
               {passwordMsg && <p className="text-xs text-text-muted mt-2">{passwordMsg}</p>}
             </section>
@@ -313,11 +348,37 @@ export function SecurityPage() {
             <section className="p-4 bg-surface border border-border rounded">
               <div className="flex items-center gap-2 mb-2">
                 <Fingerprint size={14} className="text-text-muted" />
-                <h2 className="text-sm font-semibold text-text">Passkey</h2>
+                <h2 className="text-sm font-semibold text-text">Passkeys</h2>
               </div>
               <p className="text-xs text-text-muted mb-3">
                 Add a passkey to this account (requires a secure context: HTTPS or localhost).
+                Removing your last passkey is refused if you have no password, so the account
+                can never be left with no way to sign in.
               </p>
+
+              {passkeys.length > 0 && (
+                <ul className="flex flex-col gap-2 mb-3">
+                  {passkeys.map((pk) => (
+                    <li key={pk.credentialId} className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-text font-mono truncate">{pk.credentialId.slice(0, 24)}…</p>
+                        <p className="text-[11px] text-text-muted">
+                          {pk.createdAt ? `Added ${new Date(pk.createdAt).toLocaleDateString()}` : "Added"}
+                          {pk.transports.length > 0 ? ` · ${pk.transports.join(", ")}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removePasskey(pk.credentialId)}
+                        disabled={busy}
+                        className="px-3 py-1.5 text-xs border border-danger text-danger rounded hover:bg-surface disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <button
                 onClick={addPasskey}
                 disabled={busy}
@@ -326,6 +387,7 @@ export function SecurityPage() {
                 {busy ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Fingerprint size={14} className="inline mr-1" />}
                 Add passkey
               </button>
+              {passkeyMsg && <p className="text-xs text-text-muted mt-2">{passkeyMsg}</p>}
             </section>
           </div>
         )}
