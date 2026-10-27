@@ -9,7 +9,7 @@ import {
 } from "../lib/localAuth";
 import { Seo } from "./Seo";
 import { BackLink } from "./BackLink";
-import { ThemeToggle } from "./ThemeToggle";
+import { AppHeader } from "./AppHeader";
 
 /**
  * Account security: set a password, enroll/remove the TOTP second factor,
@@ -175,10 +175,10 @@ export function SecurityPage() {
   return (
     <>
       <Seo title="Security | OpenGraph Intel" description="Manage your account security." path="/security" />
+      <AppHeader />
       <div className="max-w-2xl mx-auto p-6">
         <div className="flex items-center justify-between mb-3">
           <BackLink />
-          <ThemeToggle />
         </div>
         <h1 className="text-lg font-semibold text-text mb-1">Account security</h1>
         <p className="text-xs text-text-muted mb-6">

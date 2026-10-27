@@ -134,6 +134,7 @@ export function MyProjectsPage() {
           </Link>
         </nav>
         <div className="flex-1" />
+        <ThemeToggle />
         {authEnabled && user ? (
           <button
             onClick={() => setShowProfile(true)}
@@ -178,7 +179,6 @@ export function MyProjectsPage() {
               <Plus size={14} />
               New Project
             </button>
-            <ThemeToggle />
           </div>
         </div>
 

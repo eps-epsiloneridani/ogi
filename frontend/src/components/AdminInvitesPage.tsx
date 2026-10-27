@@ -3,7 +3,7 @@ import { Loader2, Trash2, Copy, Check } from "lucide-react";
 import { localAuthApi, type Invite } from "../lib/localAuth";
 import { Seo } from "./Seo";
 import { BackLink } from "./BackLink";
-import { ThemeToggle } from "./ThemeToggle";
+import { AppHeader } from "./AppHeader";
 
 /**
  * Admin invite management: mint one-time invite links, hand them to humans
@@ -66,10 +66,10 @@ export function AdminInvitesPage() {
   return (
     <>
       <Seo title="Invites | OpenGraph Intel" description="Manage account invites." path="/admin/invites" />
+      <AppHeader />
       <div className="max-w-2xl mx-auto p-6">
         <div className="flex items-center justify-between mb-3">
           <BackLink />
-          <ThemeToggle />
         </div>
         <h1 className="text-lg font-semibold text-text mb-1">Account invites</h1>
         <p className="text-xs text-text-muted mb-6">
