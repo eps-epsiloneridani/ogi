@@ -136,7 +136,7 @@ export function MyProjectsPage() {
         {authEnabled && user ? (
           <button
             onClick={() => setShowProfile(true)}
-            className="flex items-center justify-center w-7 h-7 rounded-full bg-accent text-white text-[10px] font-semibold hover:opacity-80"
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-accent text-on-accent text-[10px] font-semibold hover:opacity-80"
             title={user.email ?? "Profile & Settings"}
           >
             {((user.user_metadata?.display_name as string) ?? user.email ?? "")
@@ -172,7 +172,7 @@ export function MyProjectsPage() {
             )}
             <button
               onClick={() => setShowCreate(!showCreate)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover"
             >
               <Plus size={14} />
               New Project
@@ -216,7 +216,7 @@ export function MyProjectsPage() {
                 <button
                   type="submit"
                   disabled={creating || !newName.trim()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
                 >
                   {creating && <Loader2 size={14} className="animate-spin" />}
                   Create
@@ -242,7 +242,7 @@ export function MyProjectsPage() {
             <p className="text-sm text-danger">{error}</p>
             <button
               onClick={fetchMyProjects}
-              className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-accent-hover"
+              className="px-3 py-1.5 text-xs bg-accent text-on-accent rounded hover:bg-accent-hover"
             >
               Retry
             </button>

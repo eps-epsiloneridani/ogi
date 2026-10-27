@@ -258,7 +258,7 @@ export function CreateConnectionDialog() {
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="rounded bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent-hover disabled:opacity-60"
+            className="rounded bg-accent px-3 py-1.5 text-sm text-on-accent hover:bg-accent-hover disabled:opacity-60"
           >
             {saving ? "Creating..." : "Create Connection"}
           </button>

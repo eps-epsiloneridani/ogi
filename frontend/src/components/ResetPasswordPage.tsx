@@ -60,7 +60,7 @@ export function ResetPasswordPage() {
                   clearRecovery();
                   navigate("/projects");
                 }}
-                className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover"
+                className="px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover"
               >
                 Continue to OpenGraph Intel
               </button>
@@ -89,7 +89,7 @@ export function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 Update Password

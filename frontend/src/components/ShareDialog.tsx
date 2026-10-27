@@ -110,7 +110,7 @@ export function ShareDialog({ open, onClose, projectId }: ShareDialogProps) {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
             >
               <UserPlus size={14} />
             </button>

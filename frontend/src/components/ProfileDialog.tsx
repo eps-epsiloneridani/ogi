@@ -191,7 +191,7 @@ function ProfileDialogContent({ onClose, onOpenApiKeys, capabilities }: Omit<Pro
         <div className="p-4 flex flex-col gap-4">
           {/* Avatar + Email */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-white text-sm font-semibold shrink-0">
+            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-on-accent text-sm font-semibold shrink-0">
               {initials}
             </div>
             <div className="min-w-0">
@@ -222,7 +222,7 @@ function ProfileDialogContent({ onClose, onOpenApiKeys, capabilities }: Omit<Pro
                 <button
                   onClick={handleSaveProfile}
                   disabled={saving || displayName.trim() === currentDisplayName}
-                  className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-xs bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {saving && <Loader2 size={12} className="animate-spin" />}
                   Save
@@ -254,7 +254,7 @@ function ProfileDialogContent({ onClose, onOpenApiKeys, capabilities }: Omit<Pro
                               billingAction !== null ||
                               (!billingStatus.subscribed && !billingStatus.checkout_enabled)
                             }
-                            className="px-2 py-1 text-[11px] bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 flex items-center gap-1"
+                            className="px-2 py-1 text-[11px] bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50 flex items-center gap-1"
                           >
                             {billingAction === primaryBillingAction && (
                               <Loader2 size={11} className="animate-spin" />

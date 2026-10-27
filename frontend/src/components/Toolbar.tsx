@@ -755,7 +755,7 @@ export function Toolbar() {
       {/* User profile */}
       <button
         onClick={() => setShowProfile(true)}
-        className="flex items-center justify-center w-6 h-6 rounded-full bg-accent text-white text-[10px] font-semibold hover:opacity-80"
+        className="flex items-center justify-center w-6 h-6 rounded-full bg-accent text-on-accent text-[10px] font-semibold hover:opacity-80"
         title={authEnabled && user?.email ? user.email : "Profile & Settings"}
       >
         {authEnabled && user ? (
