@@ -70,3 +70,5 @@ plugins/*
 # Uploaded media / protected local storage
 media/
 backend/media/
+._*
+.DS_Store

@@ -58,6 +58,36 @@ def enforce_auth_mode() -> None:
     raise SystemExit(1)
 
 
+def ensure_local_auth_secrets() -> None:
+    """Fail fast on unusable TOTP-secret encryption material (rehearsal finding).
+
+    Local auth encrypts TOTP seeds with a Fernet key (``OGI_API_KEY_ENCRYPTION_KEY``).
+    A missing or malformed key is invisible until a TOTP endpoint 500s mid-wizard;
+    in local mode it is boot-critical, so refuse to start here with a clear
+    message. Supabase mode never touches this key and passes through untouched.
+    """
+    if not settings.local_auth_active:
+        return
+    key = settings.api_key_encryption_key
+    if not key:
+        logger.error(
+            "Refusing to start: OGI_API_KEY_ENCRYPTION_KEY is unset, but local auth "
+            "needs it to encrypt TOTP secrets at rest. Generate one with "
+            "python -c import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+        )
+        raise SystemExit(1)
+    try:
+        from cryptography.fernet import Fernet
+
+        Fernet(key.encode())
+    except Exception:
+        logger.error(
+            "Refusing to start: OGI_API_KEY_ENCRYPTION_KEY is not a valid Fernet key "
+            "(32 url-safe base64-encoded bytes)."
+        )
+        raise SystemExit(1)
+
+
 async def _run_startup_migrations() -> None:
     """Run Alembic migrations for non-SQLite app startups when enabled."""
     if settings.use_sqlite or not settings.auto_run_migrations:
@@ -106,6 +136,7 @@ async def _recover_stale_jobs() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     enforce_auth_mode()
+    ensure_local_auth_secrets()
 
     await _run_startup_migrations()
 
