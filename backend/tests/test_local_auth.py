@@ -152,6 +152,51 @@ def test_enforce_auth_mode_passes_local_and_supabase(monkeypatch: pytest.MonkeyP
     enforce_auth_mode()
 
 
+def test_ensure_local_auth_secrets_skips_supabase_mode(monkeypatch: pytest.MonkeyPatch):
+    from ogi.main import ensure_local_auth_secrets
+
+    monkeypatch.setattr(settings, "supabase_url", "https://x.supabase.co")
+    monkeypatch.setattr(settings, "supabase_anon_key", "k")
+    ensure_local_auth_secrets()  # supabase mode never touches the local fernet key
+
+
+def test_ensure_local_auth_secrets_refuses_missing_key(monkeypatch: pytest.MonkeyPatch):
+    from ogi.main import ensure_local_auth_secrets
+
+    monkeypatch.setattr(settings, "supabase_url", "")
+    monkeypatch.setattr(settings, "supabase_anon_key", "")
+    monkeypatch.setattr(settings, "local_auth_enabled", True)
+    monkeypatch.setattr(settings, "api_key_encryption_key", "")
+    with pytest.raises(SystemExit):
+        ensure_local_auth_secrets()
+
+
+def test_ensure_local_auth_secrets_refuses_malformed_key(monkeypatch: pytest.MonkeyPatch):
+    from ogi.main import ensure_local_auth_secrets
+
+    monkeypatch.setattr(settings, "supabase_url", "")
+    monkeypatch.setattr(settings, "supabase_anon_key", "")
+    monkeypatch.setattr(settings, "local_auth_enabled", True)
+    monkeypatch.setattr(settings, "api_key_encryption_key", "replaceme-not-a-fernet-key")
+    with pytest.raises(SystemExit):
+        ensure_local_auth_secrets()
+
+
+def test_ensure_local_auth_secrets_accepts_valid_key(monkeypatch: pytest.MonkeyPatch):
+    import base64
+    import os
+
+    from ogi.main import ensure_local_auth_secrets
+
+    monkeypatch.setattr(settings, "supabase_url", "")
+    monkeypatch.setattr(settings, "supabase_anon_key", "")
+    monkeypatch.setattr(settings, "local_auth_enabled", True)
+    monkeypatch.setattr(
+        settings, "api_key_encryption_key", base64.urlsafe_b64encode(os.urandom(32)).decode()
+    )
+    ensure_local_auth_secrets()  # does not raise
+
+
 # --------------------------------------------------------------------------- #
 # endpoints
 # --------------------------------------------------------------------------- #
