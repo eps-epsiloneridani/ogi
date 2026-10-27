@@ -9,13 +9,12 @@ import { ENTITY_TYPE_META } from "../types/entity";
 import { isCustomSvgIcon, resolveEntityIconName } from "../lib/entityIconRegistry";
 import { LazyLucideIcon } from "./LazyLucideIcon";
 import { ProtectedMediaImage } from "./ProtectedMediaImage";
-
-const SELECTED_LABEL_COLOR = "#111827";
-const SELECTED_LABEL_BG = "#f3f4f6";
-const PINNED_LABEL_COLOR = "#dbeafe";
-const PINNED_LABEL_BG = "#1e3a8a";
-const CONNECTION_LABEL_COLOR = "#fef3c7";
-const CONNECTION_LABEL_BG = "#92400e";
+import { useResolvedTheme } from "../lib/theme";
+import {
+  getActiveGraphChrome,
+  getGraphChromeColors,
+  setActiveGraphChrome,
+} from "../lib/graphTheme";
 
 type NodeVisualOverlay =
   | { id: string; x: number; y: number; size: number; kind: "icon"; icon: string; color: string }
@@ -117,15 +116,16 @@ function drawHighlightedNodeHover(
   context.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
   context.closePath();
 
-  context.fillStyle = data.highlightedLabelBackground ?? SELECTED_LABEL_BG;
-  context.shadowColor = "rgba(15, 23, 42, 0.25)";
+  const chrome = getActiveGraphChrome();
+  context.fillStyle = data.highlightedLabelBackground ?? chrome.selectedLabelBackground;
+  context.shadowColor = chrome.labelShadowColor;
   context.shadowBlur = 12;
   context.shadowOffsetY = 2;
   context.fill();
 
   context.shadowBlur = 0;
   context.shadowOffsetY = 0;
-  context.fillStyle = data.highlightedLabelColor ?? SELECTED_LABEL_COLOR;
+  context.fillStyle = data.highlightedLabelColor ?? chrome.selectedLabelColor;
   context.fillText(label, textX, textY);
   context.restore();
 }
@@ -152,6 +152,8 @@ export function GraphCanvas() {
     connectionDraft,
   } = useGraphStore();
   const { currentProject } = useProjectStore();
+  const theme = useResolvedTheme();
+  const chrome = getGraphChromeColors(theme);
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const [nodeVisualOverlays, setNodeVisualOverlays] = useState<NodeVisualOverlay[]>([]);
   const [selectionBox, setSelectionBox] = useState<null | {
@@ -216,7 +218,7 @@ export function GraphCanvas() {
       defaultDrawNodeHover: drawHighlightedNodeHover,
       defaultNodeColor: "#6366f1",
       defaultEdgeColor: "#4b5563",
-      labelColor: { color: "#e1e4ed" },
+      labelColor: { color: getActiveGraphChrome().labelColor },
       labelSize: 12,
       labelRenderedSizeThreshold: 6,
       enableEdgeEvents: true,
@@ -441,6 +443,18 @@ export function GraphCanvas() {
   ]);
 
   useEffect(() => {
+    // Keep the hover-draw fallback colours in sync with the active theme, and
+    // re-apply the label colour on the live renderer without a full re-init
+    // (a re-init would re-run the force layout and lose positions).
+    setActiveGraphChrome(chrome);
+    const renderer = sigmaRef.current;
+    if (renderer) {
+      renderer.setSetting("labelColor", { color: chrome.labelColor });
+      renderer.refresh();
+    }
+  }, [chrome]);
+
+  useEffect(() => {
     initSigma();
     return () => {
       if (sigmaRef.current) {
@@ -466,8 +480,8 @@ export function GraphCanvas() {
           ...data,
           zIndex: Math.max((data.zIndex as number | undefined) ?? 0, 1),
           highlighted: true,
-          highlightedLabelColor: PINNED_LABEL_COLOR,
-          highlightedLabelBackground: PINNED_LABEL_BG,
+          highlightedLabelColor: chrome.pinnedLabelColor,
+          highlightedLabelBackground: chrome.pinnedLabelBackground,
         };
       }
 
@@ -476,8 +490,8 @@ export function GraphCanvas() {
           ...data,
           zIndex: Math.max((data.zIndex as number | undefined) ?? 0, 2),
           highlighted: true,
-          highlightedLabelColor: CONNECTION_LABEL_COLOR,
-          highlightedLabelBackground: CONNECTION_LABEL_BG,
+          highlightedLabelColor: chrome.connectionLabelColor,
+          highlightedLabelBackground: chrome.connectionLabelBackground,
         };
       }
 
@@ -491,8 +505,8 @@ export function GraphCanvas() {
                 highlighted: true,
                 zIndex: 2,
                 size: (data.size ?? 8) + 4,
-                highlightedLabelColor: SELECTED_LABEL_COLOR,
-                highlightedLabelBackground: SELECTED_LABEL_BG,
+                highlightedLabelColor: chrome.selectedLabelColor,
+                highlightedLabelBackground: chrome.selectedLabelBackground,
               };
             }
             if (nodeOverlay.matchIds.has(node)) {
@@ -500,8 +514,8 @@ export function GraphCanvas() {
                 ...data,
                 highlighted: true,
                 zIndex: 1,
-                highlightedLabelColor: SELECTED_LABEL_COLOR,
-                highlightedLabelBackground: SELECTED_LABEL_BG,
+                highlightedLabelColor: chrome.selectedLabelColor,
+                highlightedLabelBackground: chrome.selectedLabelBackground,
               };
             }
             return { ...data, color: `${data.color}22`, label: "" };
@@ -526,8 +540,8 @@ export function GraphCanvas() {
             highlighted: true,
             size: (data.size ?? 8) + 3,
             zIndex: 2,
-            highlightedLabelColor: SELECTED_LABEL_COLOR,
-            highlightedLabelBackground: SELECTED_LABEL_BG,
+            highlightedLabelColor: chrome.selectedLabelColor,
+            highlightedLabelBackground: chrome.selectedLabelBackground,
           };
         }
         if (declutterState.fadeUnselected) {
@@ -556,7 +570,7 @@ export function GraphCanvas() {
       if (selectedEdgeId && edge === selectedEdgeId) {
         return {
           ...data,
-          color: "#60a5fa",
+          color: chrome.selectedEdgeColor,
           size: Math.max((data.size ?? 2) * 2.2, 4),
           zIndex: 3,
         };
@@ -565,7 +579,7 @@ export function GraphCanvas() {
       if (hoveredEdgeId && edge === hoveredEdgeId) {
         return {
           ...data,
-          color: "#93c5fd",
+          color: chrome.hoveredEdgeColor,
           size: Math.max((data.size ?? 2) * 2, 3.5),
           zIndex: 2,
         };
@@ -597,6 +611,7 @@ export function GraphCanvas() {
     declutterState,
     graph,
     connectionDraft,
+    chrome,
   ]);
 
   // Expose sigma ref for zoom controls and context menu
@@ -607,8 +622,9 @@ export function GraphCanvas() {
 
   const handleExportGraphImage = useCallback(async () => {
     const backgroundColor = wrapperRef.current
-      ? getComputedStyle(wrapperRef.current).backgroundColor || "#0b1020"
-      : "#0b1020";
+      ? getComputedStyle(wrapperRef.current).backgroundColor ||
+        getActiveGraphChrome().exportFallbackBackground
+      : getActiveGraphChrome().exportFallbackBackground;
     const { exportGraphImage } = await import("../lib/exportGraphImage");
     await exportGraphImage({
       graph,
@@ -833,7 +849,11 @@ export function GraphCanvas() {
                   projectId={overlay.projectId}
                   entityId={overlay.id}
                   src={overlay.imageUrl}
-                  className="h-full w-full rounded-full border border-white/20 object-cover shadow-[0_0_0_1px_rgba(15,23,42,0.25)]"
+                  className={`h-full w-full rounded-full border object-cover ${
+                    theme === "light"
+                      ? "border-black/10 shadow-[0_0_0_1px_rgba(15,23,42,0.12)]"
+                      : "border-white/20 shadow-[0_0_0_1px_rgba(15,23,42,0.25)]"
+                  }`}
                 />
               ) : isCustomSvgIcon(overlay.icon) ? (
                 <img

@@ -8,6 +8,7 @@ import { useProjectStore } from "../stores/projectStore";
 import { useGraphStore } from "../stores/graphStore";
 import type { MapCluster, MapPoint, MapRoute } from "../types/map";
 import { useIsViewer } from "../hooks/useIsViewer";
+import { useResolvedTheme } from "../lib/theme";
 
 const POINT_SOURCE_ID = "ogi-points";
 const CLUSTER_SOURCE_ID = "ogi-clusters";
@@ -37,12 +38,13 @@ export function MapView() {
   const { currentProject } = useProjectStore();
   const { selectedNodeId, selectedEdgeId, selectNode, selectEdge, addEntity } = useGraphStore();
   const isViewer = useIsViewer();
+  const resolvedTheme = useResolvedTheme();
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [clusters, setClusters] = useState<MapCluster[]>([]);
   const [routes, setRoutes] = useState<MapRoute[]>([]);
   const [zoom, setZoom] = useState(2);
   const [cluster, setCluster] = useState(true);
-  const [basemap, setBasemap] = useState<Basemap>("dark");
+  const [basemap, setBasemap] = useState<Basemap>(resolvedTheme === "light" ? "light" : "dark");
   const [showPoints, setShowPoints] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -115,6 +117,19 @@ export function MapView() {
     isViewerRef.current = isViewer;
     syncCursor();
   }, [isViewer]);
+
+  useEffect(() => {
+    // Follow the theme for the default dark/light basemap pair, but never
+    // override an explicit non-default choice (satellite, dark-gray, etc.).
+    // Both CARTO dark and OSM light tiles are already declared as sources in
+    // the map style, so this introduces no new remote resource.
+    setBasemap((current) => {
+      if (current === "dark" || current === "light") {
+        return resolvedTheme === "light" ? "light" : "dark";
+      }
+      return current;
+    });
+  }, [resolvedTheme]);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
