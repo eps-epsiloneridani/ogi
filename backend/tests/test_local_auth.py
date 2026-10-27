@@ -17,6 +17,7 @@ os.environ.setdefault("OGI_DB_PATH", ":memory:")
 os.environ.setdefault("OGI_USE_SQLITE", "true")
 os.environ.setdefault("OGI_SUPABASE_URL", "")
 os.environ.setdefault("OGI_SUPABASE_ANON_KEY", "")
+os.environ.setdefault("OGI_API_KEY_ENCRYPTION_KEY", "k0f97udxEhQ4duzTQESsQNmjUG74U7SMiFd7LrD0WBE=")
 os.environ.setdefault("OGI_TELEMETRY_ENABLED", "false")
 
 from ogi.main import app  # noqa: E402
@@ -177,12 +178,52 @@ async def test_bootstrap_creates_admin(client: AsyncClient):
     assert body["token"]
     assert "ogi_session" in r.cookies
 
-    # second bootstrap is rejected (already bootstrapped)
+
+async def test_bootstrap_claim_is_resumable_without_credential(client: AsyncClient):
+    # A-SEC-02: claim creates the LocalAuthUser row before any credential exists.
+    # Abandoning here must NOT strand the instance — a fresh claim resumes instead
+    # of hitting a 409, and the instance still reports bootstrapRequired.
+    r = await client.post(
+        "/api/v1/auth/bootstrap",
+        json={"email": "admin@example.com", "setupToken": "s3cret-setup-token"},
+    )
+    assert r.status_code == 200
+
     r2 = await client.post(
         "/api/v1/auth/bootstrap",
         json={"email": "admin@example.com", "setupToken": "s3cret-setup-token"},
     )
-    assert r2.status_code == 409
+    assert r2.status_code == 200  # resumable, not 409
+
+    st = await client.get("/api/v1/auth/status")
+    assert st.json()["bootstrapRequired"] is True
+
+
+async def test_bootstrap_rejected_once_credential_exists(client: AsyncClient):
+    from ogi.db import database as db
+    from ogi.models import WebAuthnCredential
+
+    r = await client.post(
+        "/api/v1/auth/bootstrap",
+        json={"email": "admin@example.com", "setupToken": "s3cret-setup-token"},
+    )
+    token = r.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    me = await client.get("/api/v1/auth/me", headers=headers)
+    user_id = UUID(me.json()["id"])
+
+    # A usable credential now exists (a passkey) → the instance is bootstrapped.
+    maker = db.async_session_maker
+    assert maker is not None
+    async with maker() as s:
+        s.add(WebAuthnCredential(credential_id="cred-1", user_id=user_id, public_key="x"))
+        await s.commit()
+
+    r2 = await client.post(
+        "/api/v1/auth/bootstrap",
+        json={"email": "admin@example.com", "setupToken": "s3cret-setup-token"},
+    )
+    assert r2.status_code == 409  # already bootstrapped
 
 
 async def test_bootstrap_rejects_wrong_token(client: AsyncClient):

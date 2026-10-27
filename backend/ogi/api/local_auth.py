@@ -209,8 +209,21 @@ async def _find_profile_by_email(email: str, session: AsyncSession) -> UserProfi
     return result.scalar_one_or_none()
 
 
-async def _has_any_local_user(session: AsyncSession) -> bool:
-    result = await session.execute(select(LocalAuthUser.user_id).limit(1))
+async def _is_bootstrapped(session: AsyncSession) -> bool:
+    """True once the instance has a usable login credential.
+
+    A bare ``LocalAuthUser`` row (a claim before any credential exists) does NOT
+    count: an operator who abandons after claim must be able to resume, not be
+    stranded with a bootstrapped-but-unusable instance. A usable credential is a
+    passkey credential row OR a set password (TOTP is a second factor, not a
+    method on its own).
+    """
+    result = await session.execute(select(WebAuthnCredential.credential_id).limit(1))
+    if result.scalar_one_or_none() is not None:
+        return True
+    result = await session.execute(
+        select(LocalAuthUser.user_id).where(LocalAuthUser.password_hash.is_not(None)).limit(1)
+    )
     return result.scalar_one_or_none() is not None
 
 
@@ -428,7 +441,7 @@ async def auth_status(session: AsyncSession = Depends(get_session)) -> dict[str,
         "rpid": rpid,
         "origins": origins,
         "webauthnAvailable": settings.webauthn_available,
-        "bootstrapRequired": not await _has_any_local_user(session),
+        "bootstrapRequired": not await _is_bootstrapped(session),
         "setupTokenConfigured": bool(settings.setup_token),
     }
 
@@ -445,7 +458,7 @@ async def bootstrap(
     email = (payload.get("email") or "").strip().lower()
     setup_token = payload.get("setupToken") or ""
 
-    if await _has_any_local_user(session):
+    if await _is_bootstrapped(session):
         raise HTTPException(status_code=409, detail="Already bootstrapped")
 
     if not settings.setup_token:
