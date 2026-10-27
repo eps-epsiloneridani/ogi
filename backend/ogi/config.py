@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # (https origin) or on http://localhost. RPID and expected origins are
     # operator-configurable below.
     local_auth_enabled: bool = False
+    # Explicit opt-in to the fall-through anonymous auth mode (a fixed profile
+    # with full admin reach). Default OFF so a misconfigured deployment fails
+    # closed at startup instead of silently serving anonymous admin access.
+    allow_anonymous: bool = False
     webauthn_rpid: str = ""  # e.g. "osi.61cygni.co.uk"
     public_origin: str = ""  # comma-separated expected origins, e.g. "https://osi.61cygni.co.uk"
     extra_allowed_origins: str = ""  # optional extra origins (LAN http://host:9901, etc.)

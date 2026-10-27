@@ -106,6 +106,52 @@ def test_auth_mode_local(monkeypatch: pytest.MonkeyPatch):
 
 
 # --------------------------------------------------------------------------- #
+# anonymous fail-closed gate (A-SEC-01)
+# --------------------------------------------------------------------------- #
+
+def test_allow_anonymous_defaults_false(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(settings, "allow_anonymous", False)
+    assert settings.allow_anonymous is False
+
+
+def test_enforce_auth_mode_refuses_anonymous_without_opt_in(monkeypatch: pytest.MonkeyPatch):
+    from ogi.main import enforce_auth_mode
+
+    monkeypatch.setattr(settings, "supabase_url", "")
+    monkeypatch.setattr(settings, "supabase_anon_key", "")
+    monkeypatch.setattr(settings, "local_auth_enabled", False)
+    monkeypatch.setattr(settings, "allow_anonymous", False)
+    with pytest.raises(SystemExit):
+        enforce_auth_mode()
+
+
+def test_enforce_auth_mode_allows_anonymous_with_opt_in(monkeypatch: pytest.MonkeyPatch):
+    from ogi.main import enforce_auth_mode
+
+    monkeypatch.setattr(settings, "supabase_url", "")
+    monkeypatch.setattr(settings, "supabase_anon_key", "")
+    monkeypatch.setattr(settings, "local_auth_enabled", False)
+    monkeypatch.setattr(settings, "allow_anonymous", True)
+    enforce_auth_mode()  # does not raise
+
+
+def test_enforce_auth_mode_passes_local_and_supabase(monkeypatch: pytest.MonkeyPatch):
+    from ogi.main import enforce_auth_mode
+
+    # local mode passes through
+    monkeypatch.setattr(settings, "supabase_url", "")
+    monkeypatch.setattr(settings, "supabase_anon_key", "")
+    monkeypatch.setattr(settings, "local_auth_enabled", True)
+    enforce_auth_mode()
+
+    # supabase mode passes through
+    monkeypatch.setattr(settings, "supabase_url", "https://x.supabase.co")
+    monkeypatch.setattr(settings, "supabase_anon_key", "k")
+    monkeypatch.setattr(settings, "local_auth_enabled", False)
+    enforce_auth_mode()
+
+
+# --------------------------------------------------------------------------- #
 # endpoints
 # --------------------------------------------------------------------------- #
 

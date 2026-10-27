@@ -31,6 +31,33 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("ogi")
 
 
+def enforce_auth_mode() -> None:
+    """Fail closed on the anonymous auth fallback (A-SEC-01).
+
+    ``auth_mode`` resolves to ``supabase`` → ``local`` → ``anonymous``. The
+    anonymous fallback returns a fixed profile with full admin reach, so it must
+    never be active by accident on a real deployment: refuse to start unless the
+    operator explicitly opted in with ``OGI_ALLOW_ANONYMOUS=true``. Supabase and
+    local modes pass through untouched.
+    """
+    if settings.auth_mode != "anonymous":
+        return
+    if settings.allow_anonymous:
+        logger.warning(
+            "Anonymous auth is active (OGI_ALLOW_ANONYMOUS=true): the API serves a "
+            "fixed anonymous profile with full admin reach. Development only — never "
+            "run this in production."
+        )
+        return
+    logger.error(
+        "Refusing to start: no auth backend is configured and anonymous mode is not "
+        "explicitly enabled. Configure Supabase (OGI_SUPABASE_URL + "
+        "OGI_SUPABASE_ANON_KEY) or local auth (OGI_LOCAL_AUTH_ENABLED=true), or opt "
+        "in explicitly with OGI_ALLOW_ANONYMOUS=true."
+    )
+    raise SystemExit(1)
+
+
 async def _run_startup_migrations() -> None:
     """Run Alembic migrations for non-SQLite app startups when enabled."""
     if settings.use_sqlite or not settings.auto_run_migrations:
@@ -78,6 +105,8 @@ async def _recover_stale_jobs() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    enforce_auth_mode()
+
     await _run_startup_migrations()
 
     # Startup DB connection
