@@ -10,7 +10,7 @@ import { PasskeyAuthPage } from "./PasskeyAuthPage";
 const defaultAuthStatus = {
   authMode: "local" as const,
   localAuthEnabled: true,
-  passwordAuthEnabled: false,
+  passwordAuthEnabled: true,
   rpid: "osi.61cygni.co.uk",
   origins: ["https://osi.61cygni.co.uk"],
   webauthnAvailable: false,
@@ -160,5 +160,24 @@ describe("PasskeyAuthPage first-run setup wizard", () => {
     await clickButton("Skip for now");
     expect(document.body.textContent).toContain("Register a passkey");
     expect(document.body.textContent).not.toContain("PROJECTS");
+  });
+
+  it("skips the password step when password auth is disabled (passkey-only bootstrap)", async () => {
+    authState.authStatus = { ...defaultAuthStatus, passwordAuthEnabled: false };
+
+    const c = render();
+    await setInputValue(getByType(c, "email"), "rich@multijoy.co.uk");
+    await setInputValue(getByType(c, "password"), "setup-token-value");
+    await clickButton("Continue");
+
+    // The mandatory password step must NOT appear when password auth is off.
+    expect(document.body.textContent).not.toContain("Set password and continue");
+
+    // Land on the optional TOTP step; skip it to reach the finish step (no
+    // passkey offered in the non-secure context).
+    expect(document.body.textContent).toContain("Skip for now");
+    await clickButton("Skip for now");
+    await clickButton("Finish setup");
+    expect(document.body.textContent).toContain("PROJECTS");
   });
 });

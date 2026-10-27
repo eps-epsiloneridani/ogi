@@ -38,6 +38,10 @@ export function SetupWizard() {
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
 
   const passkeyOffered = Boolean(authStatus?.webauthnAvailable) && Boolean(window.isSecureContext);
+  // Password is an optional fallback (off by default). When the backend reports
+  // it disabled, the mandatory password step is skipped so a passkey-only
+  // operator can still complete the wizard.
+  const passwordAuthEnabled = authStatus?.passwordAuthEnabled ?? false;
 
   const claim = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +50,7 @@ export function SetupWizard() {
     const err = await bootstrap(email, setupToken);
     setBusy(false);
     if (err) setError(err);
-    else setStep("password");
+    else setStep(passwordAuthEnabled ? "password" : "totp");
   };
 
   const submitPassword = async (e: React.FormEvent) => {

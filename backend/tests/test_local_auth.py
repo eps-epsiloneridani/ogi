@@ -390,6 +390,19 @@ async def test_password_login_disabled_by_default(client: AsyncClient):
     assert r.status_code == 503
 
 
+async def test_password_set_rejected_when_disabled(client: AsyncClient):
+    # password_auth_enabled is False in this fixture; enrolment must be refused
+    # with 503 so a passkey-only operator is never prompted to set a password.
+    r = await client.post(
+        "/api/v1/auth/bootstrap",
+        json={"email": "admin@example.com", "setupToken": "s3cret-setup-token"},
+    )
+    token = r.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    r = await client.post("/api/v1/auth/password/set", json={"password": "correct-horse"}, headers=headers)
+    assert r.status_code == 503
+
+
 async def test_webauthn_complete_rejects_bad_challenge(client: AsyncClient):
     r = await client.post(
         "/api/v1/auth/webauthn/login/complete",
