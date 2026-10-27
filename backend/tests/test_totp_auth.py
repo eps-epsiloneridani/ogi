@@ -7,6 +7,7 @@ lockout.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from uuid import UUID
 
@@ -106,6 +107,36 @@ def test_recovery_codes_unique_and_normalizable():
         assert totp_util.normalize_recovery_code(code.lower().replace("-", " ")) == code.replace("-", "")
     hashes = [totp_util.hash_recovery_code(c) for c in codes]
     assert len(set(hashes)) == 10
+
+
+def test_recovery_code_format_has_80_bits():
+    codes = totp_util.generate_recovery_codes(3)
+    for code in codes:
+        groups = code.split("-")
+        assert len(groups) == 4
+        assert all(len(g) == 4 for g in groups)
+        # 16 symbols over a 32-symbol alphabet == 80 bits of entropy
+        assert len(totp_util.normalize_recovery_code(code)) == 16
+
+
+def test_recovery_code_hash_is_argon2():
+    code = totp_util.generate_recovery_codes(1)[0]
+    assert totp_util.hash_recovery_code(code).startswith("$argon2")
+
+
+def test_recovery_code_verify_accepts_argon2_and_legacy():
+    code = totp_util.generate_recovery_codes(1)[0]
+    other = totp_util.generate_recovery_codes(1)[0]
+
+    # New argon2 path.
+    argon2_hash = totp_util.hash_recovery_code(code)
+    assert totp_util.verify_recovery_code(argon2_hash, code)
+    assert not totp_util.verify_recovery_code(argon2_hash, other)
+
+    # Legacy unsalted SHA-256 digest path (pre-upgrade codes).
+    legacy = hashlib.sha256(totp_util.normalize_recovery_code(code).encode("ascii")).hexdigest()
+    assert totp_util.verify_recovery_code(legacy, code)
+    assert not totp_util.verify_recovery_code(legacy, other)
 
 
 # --------------------------------------------------------------------------- #

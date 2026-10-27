@@ -16,6 +16,7 @@ HttpOnly cookie and accepted identically as ``Authorization: Bearer``.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import secrets
@@ -322,13 +323,29 @@ async def _consume_recovery_code(
     """Redeem a one-time recovery code; returns False if unknown/used/wrong user."""
     if not code:
         return False
-    row = await session.get(TotpRecoveryCode, totp_util.hash_recovery_code(code))
-    if row is None or row.user_id != user_id or row.used_at is not None:
-        return False
-    row.used_at = _now_naive()
-    session.add(row)
-    await session.commit()
-    return True
+    normalized = totp_util.normalize_recovery_code(code)
+    # Legacy fast path: pre-upgrade codes were stored as unsalted SHA-256 hex.
+    legacy_hash = hashlib.sha256(normalized.encode("ascii")).hexdigest()
+    row = await session.get(TotpRecoveryCode, legacy_hash)
+    if row is not None:
+        if row.user_id != user_id or row.used_at is not None:
+            return False
+        row.used_at = _now_naive()
+        session.add(row)
+        await session.commit()
+        return True
+    # Argon2 path: iterate the user's unused codes and verify each in place.
+    stmt = select(TotpRecoveryCode).where(
+        TotpRecoveryCode.user_id == user_id, TotpRecoveryCode.used_at.is_(None)
+    )
+    result = await session.execute(stmt)
+    for row in result.scalars().all():
+        if totp_util.verify_recovery_code(row.code_hash, code):
+            row.used_at = _now_naive()
+            session.add(row)
+            await session.commit()
+            return True
+    return False
 
 
 async def _unused_recovery_code_count(session: AsyncSession, user_id: UUID) -> int:

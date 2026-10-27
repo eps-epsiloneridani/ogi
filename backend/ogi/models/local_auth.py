@@ -87,14 +87,16 @@ class WebAuthnChallenge(SQLModel, table=True):
 class TotpRecoveryCode(SQLModel, table=True):
     """One-time recovery codes for the TOTP second factor.
 
-    Only the SHA-256 digest of each code is stored; the plaintext is shown to
-    the user exactly once at enrollment. A code is single-use: on a successful
+    The code itself is never stored: ``code_hash`` holds either an argon2id
+    PHC string (new codes, salted) or a legacy unsalted SHA-256 hex digest
+    (pre-upgrade codes, accepted until rotated). The plaintext is shown to the
+    user exactly once at enrollment. A code is single-use: on a successful
     login ``used_at`` is stamped and it can never be used again.
     """
 
     __tablename__ = "totp_recovery_codes"
 
-    code_hash: str = Field(primary_key=True)  # sha256(normalized code) hex
+    code_hash: str = Field(primary_key=True)  # argon2id PHC (new) or sha256 hex (legacy)
     user_id: UUID = Field(foreign_key="profiles.id", ondelete="CASCADE", index=True)
     used_at: datetime | None = Field(
         default=None, sa_column=Column(DateTime(timezone=True), nullable=True)

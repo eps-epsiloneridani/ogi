@@ -20,11 +20,20 @@ import struct
 import time
 from urllib.parse import quote
 
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, InvalidHashError
+
 # Base32 alphabet for secrets (RFC 4648).
 _B32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
 # Recovery-code alphabet: 32 unambiguous chars (no 0/O, 1/I/L, 8/B confusion).
 _RECOVERY_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+# Recovery codes are high-entropy random values (16 symbols → 80 bits), so a
+# lighter argon2 profile than the password hasher is appropriate: it still adds
+# a per-code random salt and memory-hardness (defeating unsalted-SHA-256
+# rainbow tables) while keeping generation and the login verify path fast.
+_RECOVERY_PH = PasswordHasher(time_cost=1, memory_cost=8 * 1024, parallelism=1)
 
 ISSUER = "OpenGraph Intel"
 DIGITS = 6
@@ -117,11 +126,12 @@ def provisioning_uri(email: str, secret_b32: str) -> str:
 # --------------------------------------------------------------------------- #
 
 def generate_recovery_codes(count: int = 10) -> list[str]:
-    """``count`` one-time recovery codes, each formatted ``XXXX-XXXX``."""
+    """``count`` one-time recovery codes (80-bit entropy each), formatted as
+    four groups of four: ``XXXX-XXXX-XXXX-XXXX``."""
     codes: list[str] = []
     for _ in range(count):
-        raw = "".join(secrets.choice(_RECOVERY_ALPHABET) for _ in range(8))
-        codes.append(f"{raw[:4]}-{raw[4:]}")
+        raw = "".join(secrets.choice(_RECOVERY_ALPHABET) for _ in range(16))
+        codes.append("-".join(raw[i : i + 4] for i in range(0, 16, 4)))
     return codes
 
 
@@ -131,8 +141,27 @@ def normalize_recovery_code(code: str) -> str:
 
 
 def hash_recovery_code(code: str) -> str:
-    """SHA-256 of the normalized code — only the digest is ever stored."""
-    return hashlib.sha256(normalize_recovery_code(code).encode("ascii")).hexdigest()
+    """Argon2id hash of the normalized code (per-code random salt) — only the
+    hash is ever stored."""
+    return _RECOVERY_PH.hash(normalize_recovery_code(code))
+
+
+def verify_recovery_code(stored: str, code: str) -> bool:
+    """True if ``stored`` matches ``code``.
+
+    ``stored`` is either an argon2id PHC string (new codes) or a legacy
+    unsalted SHA-256 hex digest (pre-upgrade codes). Both are accepted so old
+    codes keep working until they are rotated; new codes always hash with
+    argon2id.
+    """
+    normalized = normalize_recovery_code(code)
+    if stored.startswith("$argon2"):
+        try:
+            return _RECOVERY_PH.verify(stored, normalized)
+        except (VerifyMismatchError, InvalidHashError):
+            return False
+    # Legacy unsalted SHA-256 digest.
+    return hmac.compare_digest(stored, hashlib.sha256(normalized.encode("ascii")).hexdigest())
 
 
 # --------------------------------------------------------------------------- #
