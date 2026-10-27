@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Routes, Route, useLocation, useParams } from "react-router";
 import { Loader2 } from "lucide-react";
 import { Toaster } from "sonner";
+import { initTheme, useResolvedTheme } from "./lib/theme";
 import { Layout } from "./components/Layout";
 import { AuthPage } from "./components/AuthPage";
 import { PasskeyAuthPage } from "./components/PasskeyAuthPage";
@@ -110,10 +111,15 @@ function HashScrollHandler() {
 function App() {
   useAnalytics();
   const initialize = useAuthStore((state) => state.initialize);
+  const resolvedTheme = useResolvedTheme();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    initTheme();
+  }, []);
 
   return (
     <>
@@ -141,15 +147,8 @@ function App() {
       <BetaNoticeDialog />
       <CookieConsentBanner />
       <Toaster
-        theme="dark"
+        theme={resolvedTheme}
         position="bottom-right"
-        toastOptions={{
-          style: {
-            background: "#1a1d27",
-            border: "1px solid #2e3348",
-            color: "#e1e4ed",
-          },
-        }}
       />
     </>
   );
