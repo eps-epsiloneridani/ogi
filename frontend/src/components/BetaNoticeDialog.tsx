@@ -20,7 +20,7 @@ export function BetaNoticeDialog() {
           </p>
           <button
             onClick={dismiss}
-            className="w-full mt-2 px-4 py-2 text-sm font-medium rounded bg-accent hover:bg-accent-hover text-white transition-colors"
+            className="w-full mt-2 px-4 py-2 text-sm font-medium rounded bg-accent hover:bg-accent-hover text-on-accent transition-colors"
           >
             I Understand
           </button>

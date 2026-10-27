@@ -175,7 +175,7 @@ export function TransformSettingsDialog({ open, transform, onClose }: TransformS
           <button
             onClick={saveUser}
             disabled={saving}
-            className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
           >
             Save User Defaults
           </button>

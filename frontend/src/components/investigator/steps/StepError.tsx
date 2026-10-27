@@ -8,8 +8,8 @@ export function StepError({ step }: { step: AgentStep }) {
 
   return (
     <div className="space-y-1">
-      <div className="text-[11px] font-semibold text-red-300">Error</div>
-      <p className="whitespace-pre-wrap text-[11px] text-red-200">{message}</p>
+      <div className="text-[11px] font-semibold text-danger-text">Error</div>
+      <p className="whitespace-pre-wrap text-[11px] text-danger-text">{message}</p>
     </div>
   );
 }

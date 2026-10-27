@@ -209,7 +209,7 @@ export function AgentSettingsDialog({
             in encrypted backend storage.
           </p>
 
-          <div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-[11px] text-amber-100">
+          <div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-[11px] text-warning-text">
             Strongly recommended: set provider billing and usage caps before
             enabling AI-driven investigations. Agent loops, repeated transforms,
             or large graph explorations can consume tokens faster than expected.
@@ -241,7 +241,7 @@ export function AgentSettingsDialog({
                     <span
                       className={`rounded border px-1.5 py-0.5 text-[10px] ${
                         configured
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-success-text"
                           : "border-border bg-surface-hover text-text-muted"
                       }`}
                     >
@@ -325,7 +325,7 @@ export function AgentSettingsDialog({
                   href={providerMeta.usageUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-100 hover:bg-amber-500/15"
+                  className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-warning-text hover:bg-amber-500/15"
                 >
                   {providerMeta.usageLabel}
                   <ExternalLink size={12} />
@@ -351,8 +351,8 @@ export function AgentSettingsDialog({
               <div
                 className={`mt-2 rounded border px-2 py-1.5 text-[11px] ${
                   testOk
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                    : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-success-text"
+                    : "border-amber-500/40 bg-amber-500/10 text-warning-text"
                 }`}
               >
                 {testMessage}

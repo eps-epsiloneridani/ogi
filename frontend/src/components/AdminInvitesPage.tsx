@@ -82,7 +82,7 @@ export function AdminInvitesPage() {
           <button
             type="submit"
             disabled={busy}
-            className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
           >
             {busy && <Loader2 size={14} className="animate-spin inline mr-1" />}
             Create invite

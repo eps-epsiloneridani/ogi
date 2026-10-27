@@ -5,6 +5,7 @@ import dynamicIconImports from "lucide-react/dynamicIconImports";
 
 import { api } from "../api/client";
 import { ENTITY_TYPE_META, type Entity } from "../types/entity";
+import { getActiveGraphChrome } from "./graphTheme";
 import {
   getEntityIconComponent,
   isCustomSvgIcon,
@@ -313,7 +314,7 @@ async function drawImageOverlay(
   context.restore();
 
   context.save();
-  context.strokeStyle = "rgba(255,255,255,0.2)";
+  context.strokeStyle = getActiveGraphChrome().avatarRingStroke;
   context.lineWidth = Math.max(1, overlay.size * 0.035);
   context.beginPath();
   context.arc(overlay.x, overlay.y, radius - context.lineWidth / 2, 0, Math.PI * 2);
@@ -413,7 +414,7 @@ export async function exportGraphImage({
       defaultEdgeType: "arrow",
       defaultNodeColor: "#6366f1",
       defaultEdgeColor: "#4b5563",
-      labelColor: { color: "#e1e4ed" },
+      labelColor: { color: getActiveGraphChrome().labelColor },
       labelSize: 12,
       labelRenderedSizeThreshold: 6,
       enableEdgeEvents: false,

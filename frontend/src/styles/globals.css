@@ -9,10 +9,55 @@
   --color-text-muted: #8b8fa3;
   --color-accent: #6366f1;
   --color-accent-hover: #818cf8;
+  --color-on-accent: #ffffff;
   --color-danger: #ef4444;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-overlay: rgba(15, 17, 23, 0.75);
+
+  /* Phase 4: theme-aware hairline borders / subtle surfaces (dark values are
+     byte-equivalent to the white-alpha utilities they replace) and status text
+     colours (dark values match the default-palette shades in use). */
+  --color-border-subtle: rgb(255 255 255 / 0.1);
+  --color-border-faint: rgb(255 255 255 / 0.08);
+  --color-surface-subtle: rgb(255 255 255 / 0.03);
+  --color-surface-faint: rgb(255 255 255 / 0.02);
+  --color-success-text: #4ade80;
+  --color-warning-text: #fcd34d;
+  --color-danger-text: #fca5a5;
+}
+
+/* Dark is the base (default) theme. Native controls/scrollbars follow it. */
+:root {
+  color-scheme: dark;
+  --shadow-color: rgb(0 0 0 / 0.25);
+}
+
+/* Light theme override: redefines the same semantic tokens on a scoped
+   selector. Every utility already references var(--color-*), so the whole
+   token-driven surface re-themes with no per-component changes. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f3f7;
+  --color-border: #d9dde7;
+  --color-text: #1a1d27;
+  --color-text-muted: #5b6072;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-danger: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-overlay: rgba(255, 255, 255, 0.75);
+  --color-border-subtle: rgb(15 23 42 / 0.12);
+  --color-border-faint: rgb(15 23 42 / 0.1);
+  --color-surface-subtle: rgb(15 23 42 / 0.04);
+  --color-surface-faint: rgb(15 23 42 / 0.02);
+  --color-success-text: #15803d;
+  --color-warning-text: #b45309;
+  --color-danger-text: #b91c1c;
+  --shadow-color: rgb(15 23 42 / 0.12);
 }
 
 @layer base {
@@ -27,6 +72,12 @@
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 2px;
+  }
+
+  /* Selection highlight follows the accent in both themes. */
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
   }
 
   /* Smooth transitions on interactive elements */
@@ -58,6 +109,13 @@
 @layer utilities {
   .animate-fade-in {
     animation: fade-in 150ms ease-out;
+  }
+
+  /* Theme-aware shadow colour: composes with Tailwind shadow-size utilities
+     (e.g. `shadow-2xl shadow-theme`) the same way `shadow-black/20` does, but
+     swaps to a softer shadow on light. */
+  .shadow-theme {
+    --tw-shadow-color: var(--shadow-color);
   }
 }
 

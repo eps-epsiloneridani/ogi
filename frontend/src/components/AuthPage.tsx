@@ -99,11 +99,11 @@ export function AuthPage({ mode }: AuthPageProps) {
           <p className="text-xs text-text-muted mb-6">{title}</p>
 
           {currentFeedback?.type === "signup-success" ? (
-            <div className="text-sm text-green-400">
+            <div className="text-sm text-success-text">
               Check your email to confirm your account, then sign in.
             </div>
           ) : currentFeedback?.type === "reset-sent" ? (
-            <div className="text-sm text-green-400">
+            <div className="text-sm text-success-text">
               Check your email for a password reset link.
             </div>
           ) : (
@@ -153,7 +153,7 @@ export function AuthPage({ mode }: AuthPageProps) {
               <button
                 type="submit"
                 disabled={busy || (!!turnstileSiteKey && !captchaToken)}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 {mode === "signin"

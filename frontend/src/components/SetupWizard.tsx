@@ -150,7 +150,7 @@ export function SetupWizard() {
               <button
                 type="submit"
                 disabled={busy}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 Continue
@@ -182,7 +182,7 @@ export function SetupWizard() {
               <button
                 type="submit"
                 disabled={busy}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
                 Set password and continue
@@ -210,7 +210,7 @@ export function SetupWizard() {
                   <button
                     onClick={finishTotp}
                     disabled={busy}
-                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
                   >
                     Continue
                   </button>
@@ -240,7 +240,7 @@ export function SetupWizard() {
                   <button
                     type="submit"
                     disabled={busy}
-                    className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                    className="px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
                   >
                     Verify and enable
                   </button>
@@ -253,7 +253,7 @@ export function SetupWizard() {
                   <button
                     onClick={beginTotp}
                     disabled={busy}
-                    className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                    className="px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
                   >
                     Enroll authenticator
                   </button>
@@ -282,7 +282,7 @@ export function SetupWizard() {
               <button
                 onClick={enrolPasskey}
                 disabled={busy}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Fingerprint size={14} />}
                 Register a passkey
@@ -304,7 +304,7 @@ export function SetupWizard() {
               </p>
               <button
                 onClick={finish}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover"
               >
                 <Check size={14} />
                 Finish setup

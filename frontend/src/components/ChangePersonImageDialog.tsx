@@ -156,7 +156,7 @@ export function ChangePersonImageDialog({
               type="button"
               onClick={handleSave}
               disabled={saving || !selectedFile}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm text-white hover:bg-accent-hover disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm text-on-accent hover:bg-accent-hover disabled:opacity-60"
             >
               <Save size={14} />
               {saving ? "Saving..." : "Save"}

@@ -72,7 +72,7 @@ export function RightToolbar() {
             <button
               onClick={handleTogglePrivacy}
               className={`p-2 rounded hover:bg-surface-hover ${
-                currentProject?.is_public ? "text-green-400" : "text-text-muted hover:text-text"
+                currentProject?.is_public ? "text-success-text" : "text-text-muted hover:text-text"
               }`}
               title={
                 currentProject?.is_public

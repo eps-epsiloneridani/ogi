@@ -16,7 +16,7 @@ const TIER_CONFIG: Record<VerificationTier, { label: string; color: string; bg: 
   },
   [VERIFICATION_TIERS.VERIFIED]: {
     label: "Verified",
-    color: "text-green-400",
+    color: "text-success-text",
     bg: "bg-green-400/10",
     Icon: Shield,
   },

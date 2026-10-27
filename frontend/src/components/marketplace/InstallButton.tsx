@@ -74,7 +74,7 @@ export function InstallButton({
       return (
         <button
           onClick={onDisable}
-          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] text-green-400 bg-green-400/10 rounded hover:bg-green-400/20 transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] text-success-text bg-green-400/10 rounded hover:bg-green-400/20 transition-colors"
           title="Disable for me"
         >
           <ToggleRight size={10} />

@@ -556,7 +556,7 @@ export function EntityInspector() {
                     </p>
                   )}
                   {t.plugin_name && isUnverifiedTier(t.plugin_verification_tier) && t.api_key_services.length > 0 && (
-                    <p className="text-[10px] text-amber-300">
+                    <p className="text-[10px] text-warning-text">
                       Unverified plugin will access your API keys at runtime
                     </p>
                   )}

@@ -185,7 +185,7 @@ export function ApiKeySettings({ open, onClose, initialService = null }: ApiKeyS
             <button
               type="submit"
               disabled={!canAddKey}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
               title={duplicateService ? "API key already configured" : "Add API key"}
             >
               <Plus size={14} />

@@ -51,8 +51,8 @@ export function ResetPasswordPage() {
 
           {success ? (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle size={32} className="text-green-400" />
-              <p className="text-sm text-green-400 text-center">
+              <CheckCircle size={32} className="text-success-text" />
+              <p className="text-sm text-success-text text-center">
                 Password updated successfully!
               </p>
               <button
@@ -60,7 +60,7 @@ export function ResetPasswordPage() {
                   clearRecovery();
                   navigate("/projects");
                 }}
-                className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover"
+                className="px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover"
               >
                 Continue to OpenGraph Intel
               </button>
@@ -89,7 +89,7 @@ export function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 Update Password

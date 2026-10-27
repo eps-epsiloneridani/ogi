@@ -153,7 +153,7 @@ export function TransformInfoDialog({ open, transform, onClose }: TransformInfoD
                 Needs an API key for: {(doc?.api_key_services ?? transform.api_key_services).join(", ")}
               </p>
               {doc?.source === "plugin" && isUnverifiedTier(doc.plugin_verification_tier) && (
-                <p className="text-xs text-amber-300">
+                <p className="text-xs text-warning-text">
                   This plugin is {doc.plugin_verification_tier ?? "community"}-tier and will have access to
                   those keys when it runs.
                 </p>

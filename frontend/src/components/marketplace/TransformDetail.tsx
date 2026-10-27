@@ -83,7 +83,7 @@ export function TransformDetail({
 
       {(hasSecretNetworkRisk || isSecretUsingUnverified) && (
         <div className="rounded border border-amber-400/20 bg-amber-400/5 px-3 py-2 space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
+          <div className="flex items-center gap-1.5 text-xs text-warning-text font-medium">
             <AlertTriangle size={12} />
             Secret-use risk
           </div>
@@ -189,13 +189,13 @@ export function TransformDetail({
       <div>
         <span className="text-xs text-text-muted">Permissions</span>
         <div className="flex items-center gap-3 mt-0.5 text-xs">
-          <span className={transform.permissions.network ? "text-green-400" : "text-text-muted"}>
+          <span className={transform.permissions.network ? "text-success-text" : "text-text-muted"}>
             Network: {transform.permissions.network ? "Yes" : "No"}
           </span>
           <span className={transform.permissions.filesystem ? "text-yellow-400" : "text-text-muted"}>
             Filesystem: {transform.permissions.filesystem ? "Yes" : "No"}
           </span>
-          <span className={transform.permissions.subprocess ? "text-red-400" : "text-text-muted"}>
+          <span className={transform.permissions.subprocess ? "text-danger-text" : "text-text-muted"}>
             Subprocess: {transform.permissions.subprocess ? "Yes" : "No"}
           </span>
         </div>

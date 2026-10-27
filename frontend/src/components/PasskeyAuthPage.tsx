@@ -66,7 +66,7 @@ export function PasskeyAuthPage() {
             <button
               onClick={handlePasskey}
               disabled={busy}
-              className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Fingerprint size={14} />}
               Sign in with passkey

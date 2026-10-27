@@ -83,7 +83,7 @@ export function InviteAcceptPage() {
               <button
                 onClick={handleRegister}
                 disabled={state === "busy"}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-accent text-on-accent rounded hover:bg-accent-hover disabled:opacity-50"
               >
                 {state === "busy" ? (
                   <Loader2 size={14} className="animate-spin" />

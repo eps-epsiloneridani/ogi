@@ -17,7 +17,7 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
   return (
     <>
       <div className="min-h-screen bg-bg text-text">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-bg/80 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-border-subtle bg-bg/80 backdrop-blur">
           <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
             <div className="flex items-center justify-between gap-4">
               <Link
@@ -38,13 +38,13 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
               <nav className="flex flex-wrap items-center gap-2 text-sm">
                 <Link
                   to="/discover"
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-text-muted hover:text-text"
+                  className="rounded-full border border-border-subtle bg-surface-subtle px-3 py-1.5 text-text-muted hover:text-text"
                 >
                   Discover
                 </Link>
                 <Link
                   to="/transforms"
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-text-muted hover:text-text"
+                  className="rounded-full border border-border-subtle bg-surface-subtle px-3 py-1.5 text-text-muted hover:text-text"
                 >
                   Transformers
                 </Link>
@@ -52,7 +52,7 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
                   href="https://github.com/khashashin/ogi"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-text-muted hover:text-text"
+                  className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-subtle px-3 py-1.5 text-text-muted hover:text-text"
                 >
                   <Github size={14} />
                   GitHub
@@ -61,7 +61,7 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
                   href="https://github.com/opengraphintel/ogi-transforms"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-text-muted hover:text-text"
+                  className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-subtle px-3 py-1.5 text-text-muted hover:text-text"
                 >
                   <Blocks size={14} />
                   Transform Hub
@@ -126,22 +126,22 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
                   </a>
                 </div>
                 <div className="mt-10 grid gap-4 text-sm text-text-muted sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                  <div className="rounded-2xl border border-border-faint bg-surface-subtle p-4">
                     <div className="text-2xl font-semibold text-text">Graph-first</div>
                     <p className="mt-1">Entities, edges, transforms, and analyst review in one workspace.</p>
                   </div>
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                  <div className="rounded-2xl border border-border-faint bg-surface-subtle p-4">
                     <div className="text-2xl font-semibold text-text">OSINT-ready</div>
                     <p className="mt-1">Built around practical enrichment workflows, not generic dashboards.</p>
                   </div>
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                  <div className="rounded-2xl border border-border-faint bg-surface-subtle p-4">
                     <div className="text-2xl font-semibold text-text">Open-source</div>
                     <p className="mt-1">Transparent, extensible, and designed for community transforms.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-surface/80 p-5 shadow-2xl shadow-black/25 backdrop-blur">
+              <div className="rounded-[28px] border border-border-subtle bg-surface/80 p-5 shadow-2xl shadow-theme backdrop-blur">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.16em] text-text-muted">Analyst Canvas</p>
@@ -151,23 +151,23 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
                     Active
                   </div>
                 </div>
-                <div className="rounded-3xl border border-white/8 bg-[#10131d] p-4">
+                <div className="rounded-3xl border border-border-faint bg-bg p-4">
                   <div className="grid gap-3">
-                    <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-border-faint bg-surface-subtle p-3">
                       <div>
                         <p className="text-sm font-medium text-text">Entity graph</p>
                         <p className="text-xs text-text-muted">Pivot from people to domains to infrastructure</p>
                       </div>
                       <Network className="text-accent" size={18} />
                     </div>
-                    <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-border-faint bg-surface-subtle p-3">
                       <div>
                         <p className="text-sm font-medium text-text">Transform pipeline</p>
                         <p className="text-xs text-text-muted">Run contextual enrichments without leaving the case</p>
                       </div>
                       <Search className="text-accent" size={18} />
                     </div>
-                    <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-border-faint bg-surface-subtle p-3">
                       <div>
                         <p className="text-sm font-medium text-text">Shared investigations</p>
                         <p className="text-xs text-text-muted">Collaborate on projects with controlled visibility</p>
@@ -175,7 +175,7 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
                       <ShieldCheck className="text-accent" size={18} />
                     </div>
                   </div>
-                  <div className="mt-4 rounded-2xl border border-white/8 bg-gradient-to-br from-accent/18 via-white/[0.03] to-emerald-400/10 p-4">
+                  <div className="mt-4 rounded-2xl border border-border-faint bg-gradient-to-br from-accent/18 via-white/[0.03] to-emerald-400/10 p-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-accent">Use Cases</p>
                     <ul className="mt-3 space-y-2 text-sm text-text-muted">
                       <li>Threat hunting and infrastructure pivoting</li>
@@ -253,7 +253,7 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
           </section>
         </main>
 
-        <footer className="border-t border-white/8">
+        <footer className="border-t border-border-faint">
           <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p className="max-w-xl">
               OpenGraph Intel is an open-source platform for graph-based OSINT and link analysis.
@@ -281,17 +281,17 @@ export function LandingPageStatic({ primaryHref, primaryLabel, siteUrl }: Landin
 
 function TransformCollectionCard({ transform }: { transform: TransformInfo }) {
   return (
-    <article className="flex min-h-[240px] flex-col justify-between rounded-[28px] border border-white/8 bg-surface/80 p-6">
+    <article className="flex min-h-[240px] flex-col justify-between rounded-[28px] border border-border-faint bg-surface/80 p-6">
       <div>
         <div className="inline-flex rounded-2xl border border-accent/30 bg-accent/10 p-3 text-accent">
           <Search size={18} />
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-text-muted">
+          <span className="rounded-full border border-border-subtle bg-surface-subtle px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-text-muted">
             {transform.category}
           </span>
           {transform.plugin_name && (
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-text-muted">
+            <span className="rounded-full border border-border-subtle bg-surface-subtle px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-text-muted">
               {transform.plugin_name}
             </span>
           )}
@@ -317,7 +317,7 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-white/8 bg-surface/80 p-6">
+    <div className="rounded-3xl border border-border-faint bg-surface/80 p-6">
       <div className="mb-4 inline-flex rounded-2xl border border-accent/30 bg-accent/10 p-3 text-accent">
         {icon}
       </div>

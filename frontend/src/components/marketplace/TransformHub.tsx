@@ -83,10 +83,10 @@ export function TransformHub({ open, onClose }: TransformHubProps) {
         {/* Error banner */}
         {error && (
           <div className="px-4 py-2 bg-red-400/10 border-b border-red-400/20 flex items-center justify-between">
-            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-xs text-danger-text">{error}</p>
             <button
               onClick={clearError}
-              className="text-xs text-red-400 hover:text-red-300 underline"
+              className="text-xs text-danger-text hover:text-danger-text underline"
             >
               Dismiss
             </button>
@@ -96,7 +96,7 @@ export function TransformHub({ open, onClose }: TransformHubProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <div className="mb-3 rounded border border-amber-400/20 bg-amber-400/5 px-3 py-2">
-            <p className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
+            <p className="flex items-center gap-1.5 text-xs text-warning-text font-medium">
               <AlertTriangle size={12} />
               Plugins that use API keys should be treated as privileged code.
             </p>
