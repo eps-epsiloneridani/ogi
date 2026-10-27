@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { api } from "../api/client";
 import type { TelemetryInstanceSummary, TelemetryOverview } from "../api/client";
 import { Seo } from "./Seo";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function TelemetryAdminPage() {
   const [overview, setOverview] = useState<TelemetryOverview | null>(null);
@@ -55,6 +56,9 @@ export function TelemetryAdminPage() {
             Back
           </Link>
           <div className="ml-4 text-sm font-semibold text-text">Telemetry Admin</div>
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </header>
         <div className="max-w-6xl mx-auto px-4 py-8">
           {loading ? (
