@@ -25,6 +25,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from cryptography.fernet import Fernet, InvalidToken
@@ -572,8 +573,12 @@ async def webauthn_register_complete(
     )
     session.add(credential)
     if invite is not None:
-        invite.used_at = datetime.now(timezone.utc)
-        session.add(invite)
+        # Atomic conditional consume: exactly one concurrent caller wins.
+        # Zero rows updated means another caller claimed it first — roll back
+        # the credential we just staged and fail closed.
+        if not await _consume_invite_atomically(session, invite_token):
+            await session.rollback()
+            raise HTTPException(status_code=410, detail="Invite already used")
     await session.commit()
 
     profile = await session.get(UserProfile, user_id)
@@ -1007,6 +1012,24 @@ async def _valid_invite(token: str, session: AsyncSession) -> AuthInvite:
     if _as_utc_naive(invite.expires_at) < _now_naive():
         raise HTTPException(status_code=410, detail="Invite expired")
     return invite
+
+
+async def _consume_invite_atomically(session: AsyncSession, token: str) -> bool:
+    """Atomically mark an invite used via a conditional UPDATE.
+
+    The read-then-check in ``_valid_invite`` is not atomic; two concurrent
+    register/complete calls can both observe ``used_at IS NULL``. This single
+    ``UPDATE ... WHERE token = :token AND used_at IS NULL`` makes the claim
+    atomic: exactly one caller gets ``rowcount == 1``. Does NOT commit — the
+    caller owns the surrounding transaction (so a failed claim can roll back a
+    half-built credential).
+    """
+    result = await session.execute(
+        update(AuthInvite)
+        .where(AuthInvite.token == token, AuthInvite.used_at.is_(None))
+        .values(used_at=_now_naive())
+    )
+    return result.rowcount == 1
 
 
 @router.get("/invites/{token}")

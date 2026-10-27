@@ -250,6 +250,60 @@ async def test_invites_require_admin(client: AsyncClient):
     assert r.status_code == 401  # no session -> get_current_user raises 401
 
 
+# --------------------------------------------------------------------------- #
+# invite atomic single-use + expiry (A-SEC-07)
+# --------------------------------------------------------------------------- #
+
+async def _insert_invite(token: str, email: str, expires_at, used_at=None):
+    from ogi.db import database as db
+    from ogi.models import AuthInvite
+
+    maker = db.async_session_maker
+    assert maker is not None
+    async with maker() as s:
+        s.add(AuthInvite(token=token, email=email, expires_at=expires_at, used_at=used_at))
+        await s.commit()
+
+
+async def test_invite_consume_is_atomic_single_use(client: AsyncClient):
+    from datetime import datetime, timedelta, timezone
+
+    from ogi.api.local_auth import _consume_invite_atomically
+    from ogi.db import database as db
+
+    await _insert_invite("tok-atomic", "a@example.com", datetime.now(timezone.utc) + timedelta(days=1))
+    maker = db.async_session_maker
+    assert maker is not None
+    # first consume wins
+    async with maker() as s:
+        assert await _consume_invite_atomically(s, "tok-atomic") is True
+        await s.commit()
+    # a second (sequential double-claim) is refused via the conditional-update
+    # rowcount, i.e. the atomic guard that closes the concurrent race
+    async with maker() as s:
+        assert await _consume_invite_atomically(s, "tok-atomic") is False
+
+
+async def test_invite_consume_unknown_token_returns_false(client: AsyncClient):
+    from ogi.api.local_auth import _consume_invite_atomically
+    from ogi.db import database as db
+
+    maker = db.async_session_maker
+    assert maker is not None
+    async with maker() as s:
+        assert await _consume_invite_atomically(s, "does-not-exist") is False
+
+
+async def test_invite_expiry_is_rejected(client: AsyncClient):
+    from datetime import datetime, timedelta, timezone
+
+    await _insert_invite(
+        "tok-expired", "a@example.com", datetime.now(timezone.utc) - timedelta(minutes=1)
+    )
+    r = await client.post("/api/v1/auth/webauthn/register/begin", json={"inviteToken": "tok-expired"})
+    assert r.status_code == 410
+
+
 async def test_login_begin_returns_options(client: AsyncClient):
     r = await client.post("/api/v1/auth/webauthn/login/begin")
     assert r.status_code == 200
