@@ -318,6 +318,26 @@ async def _clear_login_failures(session: AsyncSession, email: str) -> None:
         await session.commit()
 
 
+async def _mark_recovery_code_used(session: AsyncSession, code_hash: str, user_id: UUID) -> bool:
+    """Atomically consume a recovery code via a conditional UPDATE.
+
+    True iff exactly one row was claimed (``used_at IS NULL`` matched). Two
+    concurrent logins with the same code are serialized by the database: only
+    one gets ``rowcount == 1``.
+    """
+    result = await session.execute(
+        update(TotpRecoveryCode)
+        .where(
+            TotpRecoveryCode.code_hash == code_hash,
+            TotpRecoveryCode.user_id == user_id,
+            TotpRecoveryCode.used_at.is_(None),
+        )
+        .values(used_at=_now_naive())
+    )
+    await session.commit()
+    return result.rowcount == 1
+
+
 async def _consume_recovery_code(
     session: AsyncSession, user_id: UUID, code: str
 ) -> bool:
@@ -328,13 +348,8 @@ async def _consume_recovery_code(
     # Legacy fast path: pre-upgrade codes were stored as unsalted SHA-256 hex.
     legacy_hash = hashlib.sha256(normalized.encode("ascii")).hexdigest()
     row = await session.get(TotpRecoveryCode, legacy_hash)
-    if row is not None:
-        if row.user_id != user_id or row.used_at is not None:
-            return False
-        row.used_at = _now_naive()
-        session.add(row)
-        await session.commit()
-        return True
+    if row is not None and row.user_id == user_id:
+        return await _mark_recovery_code_used(session, legacy_hash, user_id)
     # Argon2 path: iterate the user's unused codes and verify each in place.
     stmt = select(TotpRecoveryCode).where(
         TotpRecoveryCode.user_id == user_id, TotpRecoveryCode.used_at.is_(None)
@@ -342,10 +357,7 @@ async def _consume_recovery_code(
     result = await session.execute(stmt)
     for row in result.scalars().all():
         if totp_util.verify_recovery_code(row.code_hash, code):
-            row.used_at = _now_naive()
-            session.add(row)
-            await session.commit()
-            return True
+            return await _mark_recovery_code_used(session, row.code_hash, user_id)
     return False
 
 

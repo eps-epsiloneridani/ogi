@@ -372,3 +372,30 @@ async def test_legacy_plaintext_totp_secret_is_tolerated_and_reencrypted(client:
         assert row is not None
         assert row.totp_secret.startswith("v1:")
         assert secret not in row.totp_secret
+
+
+# --------------------------------------------------------------------------- #
+# recovery-code atomic single-use (A-SEC-08)
+# --------------------------------------------------------------------------- #
+
+async def test_recovery_code_consume_is_atomic_single_use(client: AsyncClient):
+    from ogi.api.local_auth import _consume_recovery_code
+    from ogi.db import database as db
+    from ogi.models import TotpRecoveryCode
+
+    headers = await _bootstrap_admin(client)
+    user_id = await _admin_user_id(client, headers)
+    code = totp_util.generate_recovery_codes(1)[0]
+
+    maker = db.async_session_maker
+    assert maker is not None
+    async with maker() as s:
+        s.add(TotpRecoveryCode(code_hash=totp_util.hash_recovery_code(code), user_id=user_id))
+        await s.commit()
+
+    # First redeem wins; a second redeem of the same code is refused via the
+    # conditional-update rowcount (closes the concurrent-replay race).
+    async with maker() as s:
+        assert await _consume_recovery_code(s, user_id, code) is True
+    async with maker() as s:
+        assert await _consume_recovery_code(s, user_id, code) is False
