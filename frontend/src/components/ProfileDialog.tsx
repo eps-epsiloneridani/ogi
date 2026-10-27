@@ -230,7 +230,7 @@ function ProfileDialogContent({ onClose, onOpenApiKeys, capabilities }: Omit<Pro
               </div>
               {error && <p className="text-xs text-danger">{error}</p>}
               {saved && (
-                <p className="text-xs text-green-400">Profile updated.</p>
+                <p className="text-xs text-success-text">Profile updated.</p>
               )}
             </div>
           )}

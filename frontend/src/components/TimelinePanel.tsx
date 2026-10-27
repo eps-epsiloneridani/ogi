@@ -134,7 +134,7 @@ export function TimelinePanel() {
       </div>
 
       {error && (
-        <div className="mx-3 mt-2 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300">
+        <div className="mx-3 mt-2 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-danger-text">
           {error}
         </div>
       )}

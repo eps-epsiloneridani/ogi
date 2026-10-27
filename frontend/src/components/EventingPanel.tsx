@@ -16,9 +16,9 @@ function formatDate(value: string | undefined | null): string {
 
 function eventBadgeClass(eventType: string): string {
   if (eventType.startsWith("transform_")) return "bg-sky-500/15 text-sky-300 border-sky-500/40";
-  if (eventType === "entity_created") return "bg-emerald-500/15 text-emerald-300 border-emerald-500/40";
+  if (eventType === "entity_created") return "bg-emerald-500/15 text-success-text border-emerald-500/40";
   if (eventType === "edge_created") return "bg-violet-500/15 text-violet-300 border-violet-500/40";
-  if (eventType === "audit_log") return "bg-amber-500/15 text-amber-300 border-amber-500/40";
+  if (eventType === "audit_log") return "bg-amber-500/15 text-warning-text border-amber-500/40";
   return "bg-surface-hover text-text-muted border-border";
 }
 
@@ -129,7 +129,7 @@ export function EventingPanel() {
       </div>
 
       {error && (
-        <div className="mx-3 mt-2 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300">
+        <div className="mx-3 mt-2 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-danger-text">
           {error}
         </div>
       )}

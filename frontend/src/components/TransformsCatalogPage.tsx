@@ -96,7 +96,7 @@ export function TransformsCatalogPage() {
         keywords="OGI transforms, OSINT transformers, entity enrichment transforms, link analysis automation"
       />
       <div className="min-h-screen bg-bg text-text">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-bg/80 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-border-subtle bg-bg/80 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div>
               <Link to="/" className="text-xs font-semibold uppercase tracking-[0.18em] text-text">
@@ -107,7 +107,7 @@ export function TransformsCatalogPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 to="/"
-                className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-text-muted hover:text-text"
+                className="rounded-full border border-border-subtle bg-surface-subtle px-4 py-2 text-sm text-text-muted hover:text-text"
               >
                 Back to Landing
               </Link>
@@ -124,7 +124,7 @@ export function TransformsCatalogPage() {
 
         <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
           <section className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-            <div className="rounded-[28px] border border-white/10 bg-surface/80 p-6 shadow-2xl shadow-black/20">
+            <div className="rounded-[28px] border border-border-subtle bg-surface/80 p-6 shadow-2xl shadow-theme">
               <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-accent">
                 <Blocks size={14} />
                 Browse the toolset
@@ -142,7 +142,7 @@ export function TransformsCatalogPage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-surface/70 p-5">
+            <div className="rounded-[28px] border border-border-subtle bg-surface/70 p-5">
               <div className="flex flex-col gap-4">
                 <label className="relative block">
                   <Search
@@ -154,7 +154,7 @@ export function TransformsCatalogPage() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Search by name, description, category, or entity type"
-                    className="w-full rounded-2xl border border-white/10 bg-bg/70 py-3 pl-11 pr-4 text-sm text-text outline-none transition focus:border-accent/50"
+                    className="w-full rounded-2xl border border-border-subtle bg-bg/70 py-3 pl-11 pr-4 text-sm text-text outline-none transition focus:border-accent/50"
                   />
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -166,7 +166,7 @@ export function TransformsCatalogPage() {
                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                         activeCategory === category
                           ? "bg-accent text-white"
-                          : "border border-white/10 bg-white/[0.03] text-text-muted hover:text-text"
+                          : "border border-border-subtle bg-surface-subtle text-text-muted hover:text-text"
                       }`}
                     >
                       {category}
@@ -183,15 +183,15 @@ export function TransformsCatalogPage() {
 
           <section className="mt-10">
             {loading ? (
-              <div className="rounded-[28px] border border-white/10 bg-surface/70 p-10 text-center text-sm text-text-muted">
+              <div className="rounded-[28px] border border-border-subtle bg-surface/70 p-10 text-center text-sm text-text-muted">
                 Loading transformer catalog...
               </div>
             ) : error ? (
-              <div className="rounded-[28px] border border-red-400/20 bg-red-500/10 p-10 text-center text-sm text-red-100">
+              <div className="rounded-[28px] border border-red-400/20 bg-red-500/10 p-10 text-center text-sm text-danger-text">
                 Failed to load transformers: {error}
               </div>
             ) : filteredTransforms.length === 0 ? (
-              <div className="rounded-[28px] border border-white/10 bg-surface/70 p-10 text-center text-sm text-text-muted">
+              <div className="rounded-[28px] border border-border-subtle bg-surface/70 p-10 text-center text-sm text-text-muted">
                 No transformers matched this search.
               </div>
             ) : (
@@ -201,14 +201,14 @@ export function TransformsCatalogPage() {
                   return (
                     <article
                       key={transform.name}
-                      className="overflow-hidden rounded-[24px] border border-white/10 bg-surface/75"
+                      className="overflow-hidden rounded-[24px] border border-border-subtle bg-surface/75"
                     >
                       <button
                         type="button"
                         onClick={() =>
                           setExpandedTransform((current) => (current === transform.name ? null : transform.name))
                         }
-                        className="flex w-full flex-col gap-4 p-5 text-left transition hover:bg-white/[0.02] sm:flex-row sm:items-start sm:justify-between"
+                        className="flex w-full flex-col gap-4 p-5 text-left transition hover:bg-surface-faint sm:flex-row sm:items-start sm:justify-between"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -216,7 +216,7 @@ export function TransformsCatalogPage() {
                               {transform.category}
                             </span>
                             {transform.plugin_name && (
-                              <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-text-muted">
+                              <span className="rounded-full border border-border-subtle bg-surface-subtle px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-text-muted">
                                 Plugin: {transform.plugin_name}
                               </span>
                             )}
@@ -232,7 +232,7 @@ export function TransformsCatalogPage() {
                         </span>
                       </button>
                       {expanded && (
-                        <div className="grid gap-6 border-t border-white/10 px-5 py-5 text-sm text-text-muted lg:grid-cols-[0.9fr_1.1fr]">
+                        <div className="grid gap-6 border-t border-border-subtle px-5 py-5 text-sm text-text-muted lg:grid-cols-[0.9fr_1.1fr]">
                           <div>
                             <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-text">Entity Flow</h3>
                             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -249,7 +249,7 @@ export function TransformsCatalogPage() {
                           <div>
                             <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-text">Configuration</h3>
                             {transform.settings.length === 0 ? (
-                              <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                              <p className="mt-3 rounded-2xl border border-border-subtle bg-surface-subtle p-4">
                                 This transformer runs without additional configurable settings.
                               </p>
                             ) : (
@@ -257,11 +257,11 @@ export function TransformsCatalogPage() {
                                 {transform.settings.map((setting) => (
                                   <div
                                     key={String(setting.name)}
-                                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                                    className="rounded-2xl border border-border-subtle bg-surface-subtle p-4"
                                   >
                                     <div className="flex flex-wrap items-center gap-2">
                                       <span className="font-medium text-text">{String(setting.display_name)}</span>
-                                      <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                                      <span className="rounded-full border border-border-subtle px-2 py-0.5 text-[11px] uppercase tracking-[0.14em] text-text-muted">
                                         {String(setting.field_type)}
                                       </span>
                                       {Boolean(setting.required) && (
@@ -292,7 +292,7 @@ export function TransformsCatalogPage() {
 
 function CatalogMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-2xl border border-border-subtle bg-surface-subtle p-4">
       <div className="text-2xl font-semibold text-text">{value}</div>
       <p className="mt-1 text-sm text-text-muted">{label}</p>
     </div>
@@ -301,11 +301,11 @@ function CatalogMetric({ label, value }: { label: string; value: string }) {
 
 function DetailCard({ label, values }: { label: string; values: string[] }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-2xl border border-border-subtle bg-surface-subtle p-4">
       <h4 className="text-xs font-semibold uppercase tracking-[0.16em] text-text">{label}</h4>
       <ul className="mt-3 space-y-2">
         {values.map((value) => (
-          <li key={value} className="rounded-xl border border-white/8 bg-bg/40 px-3 py-2 text-sm text-text-muted">
+          <li key={value} className="rounded-xl border border-border-faint bg-bg/40 px-3 py-2 text-sm text-text-muted">
             {value}
           </li>
         ))}

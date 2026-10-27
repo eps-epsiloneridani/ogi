@@ -99,11 +99,11 @@ export function AuthPage({ mode }: AuthPageProps) {
           <p className="text-xs text-text-muted mb-6">{title}</p>
 
           {currentFeedback?.type === "signup-success" ? (
-            <div className="text-sm text-green-400">
+            <div className="text-sm text-success-text">
               Check your email to confirm your account, then sign in.
             </div>
           ) : currentFeedback?.type === "reset-sent" ? (
-            <div className="text-sm text-green-400">
+            <div className="text-sm text-success-text">
               Check your email for a password reset link.
             </div>
           ) : (

@@ -105,13 +105,13 @@ export function InstalledTab({ plugins, usageReport, canManage, onRefresh }: Ins
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap text-[10px]">
-                <span className={plugin.permissions.network ? "text-green-400" : "text-text-muted"}>
+                <span className={plugin.permissions.network ? "text-success-text" : "text-text-muted"}>
                   Network {plugin.permissions.network ? "on" : "off"}
                 </span>
                 <span className={plugin.permissions.filesystem ? "text-yellow-400" : "text-text-muted"}>
                   Filesystem {plugin.permissions.filesystem ? "on" : "off"}
                 </span>
-                <span className={plugin.permissions.subprocess ? "text-red-400" : "text-text-muted"}>
+                <span className={plugin.permissions.subprocess ? "text-danger-text" : "text-text-muted"}>
                   Subprocess {plugin.permissions.subprocess ? "on" : "off"}
                 </span>
               </div>
@@ -135,7 +135,7 @@ export function InstalledTab({ plugins, usageReport, canManage, onRefresh }: Ins
                 plugin.api_keys_required.map((item) => item.service),
                 plugin.permissions
               ) && (
-                <p className="flex items-center gap-1 mt-1 text-[10px] text-amber-300">
+                <p className="flex items-center gap-1 mt-1 text-[10px] text-warning-text">
                   <AlertTriangle size={10} />
                   Privileged plugin: network access + API keys
                 </p>
@@ -185,7 +185,7 @@ export function InstalledTab({ plugins, usageReport, canManage, onRefresh }: Ins
                 title={plugin.enabled ? "Disable" : "Enable"}
               >
                 {plugin.enabled ? (
-                  <ToggleRight size={18} className="text-green-400" />
+                  <ToggleRight size={18} className="text-success-text" />
                 ) : (
                   <ToggleLeft size={18} className="text-text-muted" />
                 )}

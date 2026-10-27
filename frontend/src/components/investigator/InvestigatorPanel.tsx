@@ -97,8 +97,8 @@ export function InvestigatorPanel() {
               )}
               {activeRun.error && (
                 <>
-                  <div className="mt-3 mb-1 font-semibold text-red-300">Run Error</div>
-                  <p className="whitespace-pre-wrap text-red-200">{activeRun.error}</p>
+                  <div className="mt-3 mb-1 font-semibold text-danger-text">Run Error</div>
+                  <p className="whitespace-pre-wrap text-danger-text">{activeRun.error}</p>
                 </>
               )}
             </>

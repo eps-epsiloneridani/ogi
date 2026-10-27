@@ -12,12 +12,12 @@ interface InvestigatorControlsProps {
 function statusClass(status: AgentRun["status"]): string {
   switch (status) {
     case "running":
-      return "border-emerald-500/40 bg-emerald-500/10 text-emerald-300";
+      return "border-emerald-500/40 bg-emerald-500/10 text-success-text";
     case "paused":
-      return "border-amber-500/40 bg-amber-500/10 text-amber-300";
+      return "border-amber-500/40 bg-amber-500/10 text-warning-text";
     case "failed":
     case "cancelled":
-      return "border-red-500/40 bg-red-500/10 text-red-300";
+      return "border-red-500/40 bg-red-500/10 text-danger-text";
     case "completed":
       return "border-sky-500/40 bg-sky-500/10 text-sky-300";
     default:

@@ -51,8 +51,8 @@ export function ResetPasswordPage() {
 
           {success ? (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle size={32} className="text-green-400" />
-              <p className="text-sm text-green-400 text-center">
+              <CheckCircle size={32} className="text-success-text" />
+              <p className="text-sm text-success-text text-center">
                 Password updated successfully!
               </p>
               <button

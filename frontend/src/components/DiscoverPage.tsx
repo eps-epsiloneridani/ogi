@@ -137,7 +137,7 @@ export function DiscoverPage() {
                   {authEnabled && user && (
                     <button
                       onClick={() => toggleBookmark(p)}
-                      className={`p-1 shrink-0 ${p.is_bookmarked ? "text-red-400" : "text-text-muted hover:text-red-400"}`}
+                      className={`p-1 shrink-0 ${p.is_bookmarked ? "text-danger-text" : "text-text-muted hover:text-danger-text"}`}
                       title={p.is_bookmarked ? "Remove bookmark" : "Bookmark"}
                     >
                       <Heart size={14} fill={p.is_bookmarked ? "currentColor" : "none"} />

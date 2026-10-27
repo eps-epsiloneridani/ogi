@@ -23,14 +23,14 @@ export function StepApproval({ step, disabled = false, onApprove, onReject }: St
         <button
           onClick={onApprove}
           disabled={disabled}
-          className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300 disabled:opacity-50"
+          className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] text-success-text disabled:opacity-50"
         >
           Approve
         </button>
         <button
           onClick={onReject}
           disabled={disabled}
-          className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300 disabled:opacity-50"
+          className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-danger-text disabled:opacity-50"
         >
           Reject
         </button>

@@ -331,7 +331,7 @@ function ProjectSection({ title, projects, onOpen, onDelete, showDelete }: Proje
               <div className="flex items-center gap-1">
                 {title !== "Bookmarked" && (
                   p.is_public ? (
-                    <Unlock size={12} className="text-green-400" />
+                    <Unlock size={12} className="text-success-text" />
                   ) : (
                     <Lock size={12} className="text-text-muted" />
                   )

@@ -73,18 +73,18 @@ export function TransformCard({
             </div>
           )}
           <div className="flex items-center gap-2 mt-1 flex-wrap text-[10px]">
-            <span className={transform.permissions.network ? "text-green-400" : "text-text-muted"}>
+            <span className={transform.permissions.network ? "text-success-text" : "text-text-muted"}>
               Network {transform.permissions.network ? "on" : "off"}
             </span>
             <span className={transform.permissions.filesystem ? "text-yellow-400" : "text-text-muted"}>
               Filesystem {transform.permissions.filesystem ? "on" : "off"}
             </span>
-            <span className={transform.permissions.subprocess ? "text-red-400" : "text-text-muted"}>
+            <span className={transform.permissions.subprocess ? "text-danger-text" : "text-text-muted"}>
               Subprocess {transform.permissions.subprocess ? "on" : "off"}
             </span>
           </div>
           {hasSecretNetworkRisk && (
-            <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-300">
+            <div className="flex items-center gap-1 mt-1 text-[10px] text-warning-text">
               <AlertTriangle size={10} />
               Network + secrets: privileged plugin
             </div>

@@ -542,7 +542,7 @@ export function MapView() {
       </div>
 
       {error && (
-        <div className="mx-3 mt-2 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300">
+        <div className="mx-3 mt-2 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-danger-text">
           {error}
         </div>
       )}
@@ -564,8 +564,8 @@ export function MapView() {
                 }}
                 className={`pointer-events-auto flex h-9 w-9 items-center justify-center rounded border shadow-sm transition-colors ${
                   addLocationMode
-                    ? "border-green-400 bg-green-500/20 text-green-300"
-                    : "border-border bg-surface text-green-400 hover:bg-surface-hover"
+                    ? "border-green-400 bg-green-500/20 text-success-text"
+                    : "border-border bg-surface text-success-text hover:bg-surface-hover"
                 }`}
                 title={addLocationMode ? "Cancel add location mode" : "Add location from map"}
               >
@@ -578,7 +578,7 @@ export function MapView() {
             <div className="absolute bottom-3 left-3 z-10 w-80 rounded-lg border border-border bg-surface p-3 shadow-lg">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-green-400" />
+                  <MapPin size={14} className="text-success-text" />
                   <h3 className="text-sm font-semibold text-text">Create Location</h3>
                 </div>
                 <button onClick={closeLocationDraft} className="text-text-muted hover:text-text">
