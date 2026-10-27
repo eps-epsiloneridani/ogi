@@ -27,6 +27,7 @@ os.environ.setdefault("OGI_DB_PATH", ":memory:")
 os.environ.setdefault("OGI_USE_SQLITE", "true")
 os.environ.setdefault("OGI_SUPABASE_URL", "")
 os.environ.setdefault("OGI_SUPABASE_ANON_KEY", "")
+os.environ.setdefault("OGI_API_KEY_ENCRYPTION_KEY", "k0f97udxEhQ4duzTQESsQNmjUG74U7SMiFd7LrD0WBE=")
 os.environ.setdefault("OGI_TELEMETRY_ENABLED", "false")
 
 from ogi.main import app  # noqa: E402

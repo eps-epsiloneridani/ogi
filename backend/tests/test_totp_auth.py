@@ -8,6 +8,7 @@ lockout.
 from __future__ import annotations
 
 import os
+from uuid import UUID
 
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -16,6 +17,7 @@ os.environ.setdefault("OGI_DB_PATH", ":memory:")
 os.environ.setdefault("OGI_USE_SQLITE", "true")
 os.environ.setdefault("OGI_SUPABASE_URL", "")
 os.environ.setdefault("OGI_SUPABASE_ANON_KEY", "")
+os.environ.setdefault("OGI_API_KEY_ENCRYPTION_KEY", "k0f97udxEhQ4duzTQESsQNmjUG74U7SMiFd7LrD0WBE=")
 os.environ.setdefault("OGI_TELEMETRY_ENABLED", "false")
 
 from ogi.main import app  # noqa: E402
@@ -268,3 +270,74 @@ async def test_recovery_code_regenerate_replaces_set(client: AsyncClient):
         json={"email": "admin@example.com", "password": "correct-horse", "recoveryCode": first[0]},
     )
     assert r.status_code == 401
+
+
+# --------------------------------------------------------------------------- #
+# TOTP secret encryption at rest (A-SEC-04)
+# --------------------------------------------------------------------------- #
+
+async def _admin_user_id(client: AsyncClient, headers: dict) -> UUID:
+    me = await client.get("/api/v1/auth/me", headers=headers)
+    return UUID(me.json()["id"])
+
+
+async def test_totp_secret_is_encrypted_at_rest(client: AsyncClient):
+    from ogi.db import database as db
+    from ogi.models import LocalAuthUser
+
+    headers = await _bootstrap_admin(client)
+    await client.post("/api/v1/auth/password/set", json={"password": "correct-horse"}, headers=headers)
+
+    r = await client.post("/api/v1/auth/totp/enroll/begin", headers=headers)
+    assert r.status_code == 200
+    plaintext = r.json()["secret"]
+
+    user_id = await _admin_user_id(client, headers)
+    maker = db.async_session_maker
+    assert maker is not None
+    async with maker() as s:
+        row = await s.get(LocalAuthUser, user_id)
+        assert row is not None
+        assert row.totp_secret.startswith("v1:")
+        assert plaintext not in row.totp_secret
+
+    # decrypt-on-verify still works: enrollment completes against the ciphertext
+    code = totp_util.totp_now(plaintext)
+    r = await client.post("/api/v1/auth/totp/enroll/complete", json={"code": code}, headers=headers)
+    assert r.status_code == 200
+
+
+async def test_legacy_plaintext_totp_secret_is_tolerated_and_reencrypted(client: AsyncClient):
+    from datetime import datetime, timezone
+
+    from ogi.db import database as db
+    from ogi.models import LocalAuthUser
+
+    headers = await _bootstrap_admin(client)
+    await client.post("/api/v1/auth/password/set", json={"password": "correct-horse"}, headers=headers)
+    user_id = await _admin_user_id(client, headers)
+
+    secret = totp_util.generate_secret()
+    # Simulate a pre-upgrade row: plaintext base32 secret, already enrolled.
+    maker = db.async_session_maker
+    assert maker is not None
+    async with maker() as s:
+        row = await s.get(LocalAuthUser, user_id)
+        assert row is not None
+        row.totp_secret = secret
+        row.totp_enrolled_at = datetime.now(timezone.utc)
+        await s.commit()
+
+    # Password + TOTP login succeeds against the legacy plaintext secret.
+    r = await client.post(
+        "/api/v1/auth/password/login",
+        json={"email": "admin@example.com", "password": "correct-horse", "totpCode": totp_util.totp_now(secret)},
+    )
+    assert r.status_code == 200
+
+    # And the plaintext secret is re-encrypted at rest on successful use.
+    async with maker() as s:
+        row = await s.get(LocalAuthUser, user_id)
+        assert row is not None
+        assert row.totp_secret.startswith("v1:")
+        assert secret not in row.totp_secret

@@ -26,6 +26,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+from cryptography.fernet import Fernet, InvalidToken
 
 from ogi.api.auth import get_current_user, require_admin_user
 from ogi.auth_tokens import (
@@ -82,6 +83,59 @@ def _as_utc_naive(dt: datetime | None) -> datetime | None:
 
 def _now_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+# --------------------------------------------------------------------------- #
+# TOTP secret encryption at rest (A-SEC-04)
+# --------------------------------------------------------------------------- #
+
+_fernet: Fernet | None = None
+
+
+def _get_fernet() -> Fernet:
+    """The Fernet instance for TOTP-secret encryption, keyed by the same
+    OGI_API_KEY_ENCRYPTION_KEY the API-key store already uses."""
+    global _fernet
+    if _fernet is not None:
+        return _fernet
+    if not settings.api_key_encryption_key:
+        raise HTTPException(
+            status_code=500,
+            detail="OGI_API_KEY_ENCRYPTION_KEY is required to encrypt TOTP secrets at rest",
+        )
+    _fernet = Fernet(settings.api_key_encryption_key.encode())
+    return _fernet
+
+
+def _encrypt_totp_secret(plain: str) -> str:
+    return "v1:" + _get_fernet().encrypt(plain.encode()).decode()
+
+
+def _decrypt_totp_secret(stored: str | None) -> str | None:
+    """Decrypt a stored TOTP secret. Legacy rows (pre-encryption) hold plaintext
+    base32 and are returned verbatim so the caller can re-encrypt on use; an
+    undecryptable ``v1:`` token is treated as absent (fail closed)."""
+    if not stored:
+        return None
+    if stored.startswith("v1:"):
+        try:
+            return _get_fernet().decrypt(stored[3:].encode()).decode()
+        except InvalidToken:
+            return None
+    return stored  # legacy plaintext base32 secret
+
+
+def _reencrypt_totp_secret_if_legacy(local_user: LocalAuthUser) -> bool:
+    """Re-encrypt a legacy plaintext TOTP secret in place (no-op for ``v1:``).
+
+    Returns True when a plaintext secret was re-encrypted, so the caller can
+    commit the mutation.
+    """
+    stored = local_user.totp_secret
+    if stored and not stored.startswith("v1:"):
+        local_user.totp_secret = _encrypt_totp_secret(stored)
+        return True
+    return False
 
 
 def _webauthn_config() -> tuple[str, list[str]]:
@@ -682,16 +736,20 @@ async def password_login(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Password is correct. Enforce the second factor when enrolled (or required).
-    enrolled = bool(local_user.totp_secret and local_user.totp_enrolled_at)
+    totp_secret = _decrypt_totp_secret(local_user.totp_secret)
+    enrolled = bool(totp_secret and local_user.totp_enrolled_at)
     if enrolled:
         if recovery_code:
             if not await _consume_recovery_code(session, profile.id, recovery_code):
                 await _record_login_failure(session, email)
                 raise HTTPException(status_code=401, detail="Invalid recovery code")
         elif totp_code:
-            if not totp_util.verify_totp(local_user.totp_secret, totp_code):
+            if not totp_util.verify_totp(totp_secret, totp_code):
                 await _record_login_failure(session, email)
                 raise HTTPException(status_code=401, detail="Invalid TOTP code")
+            if _reencrypt_totp_secret_if_legacy(local_user):
+                session.add(local_user)
+                await session.commit()
         else:
             raise HTTPException(status_code=401, detail="TOTP code required")
     elif settings.totp_required:
@@ -776,7 +834,7 @@ async def totp_enroll_begin(
         raise HTTPException(status_code=409, detail="TOTP already enrolled")
 
     secret = totp_util.generate_secret()
-    local_user.totp_secret = secret  # pending until a code is verified
+    local_user.totp_secret = _encrypt_totp_secret(secret)  # encrypted at rest
     await session.commit()
 
     uri = totp_util.provisioning_uri(profile.email or "user", secret)
@@ -795,15 +853,20 @@ async def totp_enroll_complete(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     local_user = await session.get(LocalAuthUser, profile.id)
-    if local_user is None or not local_user.totp_secret:
+    if local_user is None:
         raise HTTPException(status_code=400, detail="No pending enrollment")
     if local_user.totp_enrolled_at is not None:
         raise HTTPException(status_code=409, detail="TOTP already enrolled")
 
+    secret = _decrypt_totp_secret(local_user.totp_secret)
+    if not secret:
+        raise HTTPException(status_code=400, detail="No pending enrollment")
+
     code = (payload.get("code") or "").strip()
-    if not totp_util.verify_totp(local_user.totp_secret, code):
+    if not totp_util.verify_totp(secret, code):
         raise HTTPException(status_code=400, detail="Invalid TOTP code")
 
+    _reencrypt_totp_secret_if_legacy(local_user)
     local_user.totp_enrolled_at = _now_naive()
     recovery_codes = _issue_recovery_codes(session, profile.id)
     await session.commit()

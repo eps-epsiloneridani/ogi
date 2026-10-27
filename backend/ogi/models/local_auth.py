@@ -19,8 +19,11 @@ class LocalAuthUser(SQLModel, table=True):
     user_id: UUID = Field(primary_key=True, foreign_key="profiles.id", ondelete="CASCADE")
     password_hash: str | None = Field(default=None, nullable=True)
     # TOTP second factor. ``totp_secret`` holds the base32 secret once an
-    # enrollment is *pending* or *complete*; ``totp_enrolled_at`` is only set
-    # once the user has verified a code, i.e. the factor is live.
+    # enrollment is *pending* or *complete*, encrypted at rest with the same
+    # Fernet key as API keys (a ``v1:`` prefix marks the ciphertext); legacy
+    # rows may still hold plaintext and are re-encrypted on next use.
+    # ``totp_enrolled_at`` is only set once the user has verified a code, i.e.
+    # the factor is live.
     totp_secret: str | None = Field(default=None, nullable=True)
     totp_enrolled_at: datetime | None = Field(
         default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
