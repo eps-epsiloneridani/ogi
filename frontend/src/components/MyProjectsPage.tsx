@@ -10,6 +10,7 @@ import { ProfileDialog } from "./ProfileDialog";
 import { ApiKeySettings } from "./ApiKeySettings";
 import { PluginManager } from "./PluginManager";
 import { Seo } from "./Seo";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function MyProjectsPage() {
   const navigate = useNavigate();
@@ -177,6 +178,7 @@ export function MyProjectsPage() {
               <Plus size={14} />
               New Project
             </button>
+            <ThemeToggle />
           </div>
         </div>
 
